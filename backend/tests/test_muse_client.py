@@ -24,8 +24,9 @@ def test_budget_persists_across_client_instances_and_counts_retries():
         second = CallBudget(3, state_path=state_path)
         assert second.used == 1
         assert second.remaining() == 2
-        second.consume("second")
+        first.consume("second-from-another-client")
         second.consume("third")
+        assert first.remaining() == 0
         with pytest.raises(BudgetExceeded):
             second.consume("fourth")
 

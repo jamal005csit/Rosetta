@@ -153,7 +153,7 @@ async def events(job_id: str) -> StreamingResponse:
     async def gen():
         for _ in range(5):
             st = {"job_id": job_id, "stages": stage_flags(jd)}
-            yield f"data: {json.dumps(st)}\\n\\n"
+            yield f"data: {json.dumps(st)}\n\n"
             await asyncio.sleep(0.5)
 
     return StreamingResponse(gen(), media_type="text/event-stream")

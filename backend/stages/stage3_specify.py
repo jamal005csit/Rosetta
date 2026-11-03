@@ -68,7 +68,7 @@ def validate_appspec(data: dict, observations: dict, job_dir: Path) -> None:
         if not evidence_list:
             raise ValueError("AppSpec item has no evidence timestamps")
         for reference in evidence_list:
-            match = re.fullmatch(r"t=(\\d+(?:\\.\\d+)?)s", reference)
+            match = re.fullmatch(r"t=(\d+(?:\.\d+)?)s", reference)
             if not match or round(float(match.group(1)), 1) not in observation_times:
                 raise ValueError(f"evidence timestamp is not present in observations: {reference!r}")
 
@@ -102,8 +102,8 @@ def specify_job(job_dir: Path, client: MuseClient | None = None) -> dict:
     spec_prompt = load_prompt("specifier.md")
     rule_prompt = load_prompt("rule_miner.md")
     prompt = (
-        spec_prompt + "\\n\\nRULES:\\n" + rule_prompt
-        + "\\n\\nOBSERVATIONS:\\n" + json.dumps(observations, ensure_ascii=False)[:12000]
+        spec_prompt + "\n\nRULES:\n" + rule_prompt
+        + "\n\nOBSERVATIONS:\n" + json.dumps(observations, ensure_ascii=False)[:12000]
     )
     data = client.chat_json(prompt, appspec_schema(), "specifier")
     data = normalize_appspec(data, observations)

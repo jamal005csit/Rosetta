@@ -8,6 +8,7 @@ log = logging.getLogger(__name__)
 REQUIRED_FILES = (
     "appspec.json",
     "report.html",
+    "parity.json",
     "generated_app/package.json",
     "generated_app/dist/index.html",
 )

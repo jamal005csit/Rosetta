@@ -81,8 +81,12 @@ def check_data(expected_values: dict, expected_messages: list[str], snapshot: di
     page_text = str(snapshot.get("text", ""))
     hits = 0
     for key, value in expected:
-        if key is not None and key in fields and str(fields[key]) == value:
-            hits += 1
+        if key is not None:
+            if key in fields:
+                if str(fields[key]) == value:
+                    hits += 1
+            elif value and value in page_text:
+                hits += 1
         elif value and value in page_text:
             hits += 1
     return round(hits / len(expected), 4)

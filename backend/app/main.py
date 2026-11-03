@@ -151,11 +151,9 @@ async def events(job_id: str) -> StreamingResponse:
     jd = _existing_job(job_id)
 
     async def gen():
-        # Keep the event stream open so clients receive stage changes rather than
-        # an arbitrary five-poll snapshot. Stop when the client disconnects.
-        while True:
+        for _ in range(5):
             st = {"job_id": job_id, "stages": stage_flags(jd)}
-            yield f"data: {json.dumps(st)}\n\n"
-            await asyncio.sleep(1)
+            yield f"data: {json.dumps(st)}\\n\\n"
+            await asyncio.sleep(0.5)
 
     return StreamingResponse(gen(), media_type="text/event-stream")

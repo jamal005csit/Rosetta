@@ -71,7 +71,7 @@ The same stages can be run without the frontend. Configure the root `.env` first
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
-python -m backend.tools.run_phase2 --job jobs/demo --video "C:\\recordings\\legacy-app.mp4"
+python -m backend.tools.run_phase2 --job jobs/demo --video "C:\recordings\legacy-app.mp4"
 python -m backend.tools.run_phase3 --job jobs/demo
 python -m backend.tools.run_phase4 --job jobs/demo --max-rounds 3
 ```

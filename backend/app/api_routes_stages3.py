@@ -34,7 +34,7 @@ def _client(jd: Path) -> MuseClient | None:
 
 
 _STAGE_OUTPUTS = {
-    "ingest": ("frame_timestamps.json", "transcript.txt"),
+    "ingest": ("frame_timestamps.json", "transcript.txt", "ingest.json"),
     "observe": ("observations.json",),
     "specify": ("appspec.json",),
     "generate": ("generated_app",),

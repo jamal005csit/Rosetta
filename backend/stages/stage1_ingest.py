@@ -8,7 +8,7 @@ import subprocess
 from pathlib import Path
 
 log = logging.getLogger(__name__)
-_SHOWINFO_TIME = re.compile(r"pts_time:([0-9]+(?:\\.[0-9]+)?)")
+_SHOWINFO_TIME = re.compile(r"pts_time:([0-9]+(?:\.[0-9]+)?)")
 
 
 def have_ffmpeg() -> bool:

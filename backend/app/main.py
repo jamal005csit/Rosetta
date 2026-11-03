@@ -46,7 +46,7 @@ def stage_flags(jd: Path) -> dict:
     frames = jd / "frames"
     has_frames = frames.is_dir() and any(frames.glob("frame_*.png"))
     return {
-        "ingest": bool(has_frames or has(jd / "transcript.txt")),
+        "ingest": has(jd / "ingest.json") and has_frames,
         "observe": has(jd / "observations.json"),
         "specify": has(jd / "appspec.json"),
         "generate": has(jd / "generated_app" / "package.json"),

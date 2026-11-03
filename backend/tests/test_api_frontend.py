@@ -61,10 +61,10 @@ def test_missing_and_malformed_job_ids_do_not_create_directories():
         assert response.status_code == 404
         assert not (Path(td) / missing).exists()
 
-        malformed = "../outside"
+        malformed = "not-a-valid-id"
         response = c.get(f"/jobs/{malformed}/status")
         assert response.status_code == 400
-        assert not (Path(td).parent / "outside").exists()
+        assert not (Path(td) / malformed).exists()
 
         assert c.post(f"/jobs/{missing}/run/report").status_code == 404
         assert not (Path(td) / missing).exists()

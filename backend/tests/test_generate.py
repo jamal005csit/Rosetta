@@ -69,3 +69,13 @@ def test_muse_generation_failure_does_not_silently_use_template():
     with pytest.raises(RuntimeError, match="Muse screen generation failed"):
         _one_screen({"id": "scr_custom", "title": "Custom", "fields": []}, BrokenMuse())
 
+
+def test_model_screen_paths_are_confined_to_generated_screen_source():
+    import pytest
+    from backend.stages.stage4_generate import _safe_screen_output_path
+
+    assert _safe_screen_output_path("client/src/screens/Orders.tsx", "scr_orders") == "client/src/screens/Orders.tsx"
+    for unsafe in ("../../README.md", "server/index.js", "/tmp/escape.tsx", "client\\\\src\\\\screens\\\\X.tsx"):
+        with pytest.raises(ValueError):
+            _safe_screen_output_path(unsafe, "scr_orders")
+

@@ -9,7 +9,7 @@ Last updated: 2026-11-03
 
 - [x] Phase 0 — Baseline inspection and acceptance mapping completed.
 - [x] Phase 1 — Backend API integration and job-store correctness/security (implementation complete; runtime tests pending).
-- [ ] Phase 2 — Evidence-based observation and AppSpec generation.
+- [x] Phase 2 — Evidence-based observation and AppSpec generation (implementation complete; runtime tests pending).
 - [ ] Phase 3 — Real React/Vite application build and serving.
 - [ ] Phase 4 — Genuine Playwright replay and parity scoring.
 - [ ] Phase 5 — Genuine Muse-driven repair, limited to generated_app.
@@ -54,6 +54,19 @@ Last updated: 2026-11-03
 
 **Verification status:** source changes and regression tests are committed. Tests have not been executed: the available runtime could not resolve github.com for a repository clone, and the GitHub connection exposes file operations but no local test runner. Do not treat the suite as passing until it is run in a network-enabled checkout.
 
+## Phase 2 implementation checkpoint
+
+- Removed the production hard-coded observation journey. Without a configured Muse client, observation now fails clearly instead of fabricating actions.
+- Removed the production hard-coded AppSpec fallback and stopped normalizing missing evidence, inventing legacy frame paths, or inserting an unobserved Archive menu item.
+- Added chronological/unique timestamp checks for observations.
+- Added timestamp-linked frame extraction metadata using ffmpeg `showinfo`; observation results are associated with the nearest real frame only when it is within three seconds.
+- Added local `faster-whisper` transcription support (CPU/int8, configurable `WHISPER_MODEL`, default `tiny`) when an audio stream exists. If transcription support is unavailable, the transcript remains explicitly empty and a warning is logged.
+- AppSpec generation now requires a Muse client, validates observation input, requires screen/field/shortcut/flow/rule evidence timestamps to match actual observation timestamps, checks referenced screens and targets, and requires each journey frame to exist and be attached to an observation.
+- Updated schemas and prompts to require screen-level evidence and exact frame references.
+- Reworked tests to use explicit test-only fixtures rather than calling production fallback generators.
+
+**Verification status:** regression tests were updated/added but have not been executed. Local checkout remains blocked by DNS resolution for github.com; the connected GitHub service supports source edits but not test execution. Frame timestamp extraction and faster-whisper model download/transcription remain runtime verification items.
+
 ## Next action
 
-Proceed to Phase 2: inspect observation, transcription, AppSpec schemas, and evidence handling. Preserve this verification limitation in later checkpoints.
+Proceed to Phase 3: inspect the generated React/Vite app and server, then remove the static HTML imitation and serve the actual production Vite build. Keep runtime-verification limitations explicit.

@@ -20,8 +20,12 @@ def _load(job_dir: Path, name: str, default: object) -> object:
 
 def generate_report(job_dir: Path) -> Path:
     job_dir = Path(job_dir)
+    if not (job_dir / "appspec.json").is_file():
+        raise FileNotFoundError("appspec.json is required before report generation")
+    if not (job_dir / "parity.json").is_file():
+        raise FileNotFoundError("parity.json is required before report generation")
     spec = _load(job_dir, "appspec.json", {})
-    parity = _load(job_dir, "parity.json", {"parity": 0, "pass": False, "steps": []})
+    parity = _load(job_dir, "parity.json", {})
     repair = _load(job_dir, "repair_history.json", {"rounds": 0, "history": []})
     assert isinstance(spec, dict) and isinstance(parity, dict) and isinstance(repair, dict)
     steps: list[dict] = parity.get("steps", [])  # type: ignore

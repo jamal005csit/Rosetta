@@ -33,7 +33,6 @@ def test_generate_serves_and_seed():
         blob = ""
         for p in (g / "client/src").rglob("*.tsx"):
             blob += p.read_text(encoding="utf-8")
-        blob += (g / "dist/index.html").read_text(encoding="utf-8")
         for s in spec["screens"]:
             for f in s["fields"]:
                 assert f["id"] in blob, f"missing testid {f['id']}"
@@ -43,11 +42,17 @@ def test_generate_serves_and_seed():
         rules = (g / "client/src/lib/rules.ts").read_text(encoding="utf-8")
         assert "0.14" in rules and "0.05" in rules and "0.12" in rules
         assert (g / "MIGRATION_NOTES.md").exists()
-        assert (g / "dist/index.html").exists()
+        assert (g / "client/index.html").exists()
+        assert not (g / "dist/index.html").exists()
+        assert "npm run build" in pkg["scripts"]["start"]
+        vite = (g / "vite.config.ts").read_text(encoding="utf-8")
+        assert "root: 'client'" in vite and "outDir: '../dist'" in vite
+        server = (g / "server/index.js").read_text(encoding="utf-8")
+        assert "Generated React frontend is not built" in server
 
 def test_shortcuts_preserved():
     with tempfile.TemporaryDirectory() as td:
         jd = _make_job(td)
         generate_job(jd, client=None)
-        dist = (jd / "generated_app/dist/index.html").read_text(encoding="utf-8")
-        assert "F2" in dist and "F5" in dist and "Escape" in dist
+        order = (jd / "generated_app/client/src/screens/Order.tsx").read_text(encoding="utf-8")
+        assert "F2" in order and "F5" in order and "Escape" in order

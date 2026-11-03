@@ -1,12 +1,13 @@
-"""Stage runner API: ingest/observe/specify/generate/replay/score/repair/report."""
+"""Stage runner API for the complete Rosetta pipeline."""
 import logging
+import shutil
 from pathlib import Path
+
 from fastapi import APIRouter, HTTPException
 
-from backend.app.store import job_path
+from backend.app.store import existing_job_path
 from backend.muse.client import MuseClient
-from backend.muse.budget import CallBudget
-from backend.app.config import max_calls_per_job
+from backend.app.config import meta_key
 from backend.stages import stage1_ingest
 from backend.stages.stage2_observe import observe_job
 from backend.stages.stage3_specify import specify_job
@@ -21,18 +22,61 @@ router = APIRouter()
 
 
 def _client(jd: Path) -> MuseClient | None:
-    try:
-        return MuseClient.from_env(jd, CallBudget(max_calls_per_job()))
-    except Exception as e:
-        log.warning("no muse client: %s", e)
+    if not meta_key():
+        log.warning("META_API_KEY is not configured; model-dependent stages will fail closed")
         return None
+    try:
+        return MuseClient.from_env(jd)
+    except Exception as exc:
+        log.warning("Muse client unavailable for job %s: %s", jd.name, exc)
+        return None
+
+
+
+_STAGE_OUTPUTS = {
+    "ingest": ("frame_timestamps.json", "transcript.txt", "ingest.json"),
+    "observe": ("observations.json",),
+    "specify": ("appspec.json",),
+    "generate": ("generated_app",),
+    "replay": ("replay",),
+    "score": ("parity.json",),
+    "repair": ("repair_history.json",),
+    "report": ("report.html",),
+}
+_STAGE_ORDER = ("ingest", "observe", "specify", "generate", "replay", "score", "repair", "report")
+
+
+def _invalidate_from(jd: Path, stage: str) -> None:
+    """Remove the rerun stage's old outputs and all downstream artifacts."""
+    start = _STAGE_ORDER.index(stage)
+    for stage_name in _STAGE_ORDER[start:]:
+        for relative in _STAGE_OUTPUTS[stage_name]:
+            target = jd / relative
+            if target.is_dir():
+                shutil.rmtree(target)
+            elif target.exists():
+                target.unlink()
+    export_file = jd / "export.zip"
+    if export_file.exists():
+        export_file.unlink()
+
+
+def _job_dir(job_id: str) -> Path:
+    try:
+        jd = existing_job_path(job_id)
+    except ValueError:
+        raise HTTPException(400, "invalid job id")
+    if jd is None:
+        raise HTTPException(404, "no job")
+    return jd
 
 
 @router.post("/jobs/{job_id}/run/{stage}")
 def run_stage(job_id: str, stage: str) -> dict:
-    jd = job_path(job_id)
-    if not jd.exists():
-        raise HTTPException(404, "no job")
+    jd = _job_dir(job_id)
+    if stage not in _STAGE_ORDER:
+        raise HTTPException(400, "unknown stage")
+    _invalidate_from(jd, stage)
     c = _client(jd)
     if stage == "ingest":
         return stage1_ingest.ingest(jd)

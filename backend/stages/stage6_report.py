@@ -20,8 +20,12 @@ def _load(job_dir: Path, name: str, default: object) -> object:
 
 def generate_report(job_dir: Path) -> Path:
     job_dir = Path(job_dir)
+    if not (job_dir / "appspec.json").is_file():
+        raise FileNotFoundError("appspec.json is required before report generation")
+    if not (job_dir / "parity.json").is_file():
+        raise FileNotFoundError("parity.json is required before report generation")
     spec = _load(job_dir, "appspec.json", {})
-    parity = _load(job_dir, "parity.json", {"parity": 0, "pass": False, "steps": []})
+    parity = _load(job_dir, "parity.json", {})
     repair = _load(job_dir, "repair_history.json", {"rounds": 0, "history": []})
     assert isinstance(spec, dict) and isinstance(parity, dict) and isinstance(repair, dict)
     steps: list[dict] = parity.get("steps", [])  # type: ignore
@@ -31,18 +35,22 @@ def generate_report(job_dir: Path) -> Path:
     for c in cov_items:
         unresolved.append(f"Unverified: {c.get('item', '')} - {c.get('reason', '')}")
     rows = []
-    for s in sorted(steps, key=lambda x: x.get("step", 0)):
-        leg = html.escape(str(s.get("legacy_frame", "")))
-        new = html.escape(str(s.get("new_screenshot", "")))
+    for step in sorted(steps, key=lambda item: item.get("step", 0)):
+        legacy = html.escape(str(step.get("legacy_frame", "")))
+        current = html.escape(str(step.get("new_screenshot", "")))
+        # Relative paths work both in the live report route and inside export.zip.
+        legacy_url = html.escape(str(step.get("legacy_frame", "")), quote=True)
+        current_url = html.escape(str(step.get("new_screenshot", "")), quote=True)
         rows.append(
-            "<tr><td>{step}</td><td>{w}</td><td>{st}</td><td>{da}</td><td>{fl}</td>"
-            "<td>{vi}</td><td>{ss}</td><td>{ve}</td><td>{re}</td>"
-            "<td>{leg}<br><img src='{leg}' width='160'></td>"
-            "<td>{new}<br><img src='{new}' width='160'></td></tr>".format(
-                step=s.get("step"), w=s.get("weight"), st=s.get("state"),
-                da=s.get("data"), fl=s.get("flow"), vi=s.get("visual"),
-                ss=s.get("s"), ve=html.escape(str(s.get("verdict", ""))),
-                re=html.escape(str(s.get("reason", ""))), leg=leg, new=new,
+            "<tr><td>{step}</td><td>{weight}</td><td>{state}</td><td>{data}</td><td>{flow}</td>"
+            "<td>{visual}</td><td>{score}</td><td>{verdict}</td><td>{reason}</td>"
+            "<td>{legacy}<br><a href='{legacy_url}'>open</a><br><img src='{legacy_url}' width='160'></td>"
+            "<td>{current}<br><a href='{current_url}'>open</a><br><img src='{current_url}' width='160'></td></tr>".format(
+                step=step.get("step"), weight=step.get("weight"), state=step.get("state"),
+                data=step.get("data"), flow=step.get("flow"), visual=step.get("visual"),
+                score=step.get("s"), verdict=html.escape(str(step.get("verdict", ""))),
+                reason=html.escape(str(step.get("reason", ""))),
+                legacy=legacy, current=current, legacy_url=legacy_url, current_url=current_url,
             )
         )
     cov_html = "".join(f"<li>{html.escape(str(c.get('item','')))} - {html.escape(str(c.get('reason','')))}</li>" for c in cov_items) or "<li>none</li>"
@@ -52,7 +60,7 @@ def generate_report(job_dir: Path) -> Path:
         fixes = "".join(f"<li>step {f.get('step')}: {html.escape(str(f.get('cause','')))} {html.escape(str(f.get('patch','')))} "
                         f"s {f.get('s_before')} -&gt; {f.get('s_after')}</li>" for f in r.get("fixes", []))
         rep_html += f"<li>round {r.get('round')}: {r.get('parity_before')} -&gt; {r.get('parity_after')} reran_all={r.get('reran_all')}<ul>{fixes}</ul></li>"
-    rep_html = rep_html or "<li>no repairs (already passing)</li>"
+    rep_html = rep_html or "<li>No repair history recorded.</li>"
     un_html = "".join(f"<li>{html.escape(u)}</li>" for u in unresolved) or "<li>none</li>"
     app_name = html.escape(str(spec.get("app", {}).get("name", "Rosetta")))
     out_html = f"""<!doctype html><html><head><meta charset="utf-8"><title>Rosetta Parity Report</title>

@@ -12,6 +12,8 @@
           "required": ["t", "action", "screen_after"],
           "properties": {
             "t": {"type": "number", "minimum": 0},
+            "frame": {"type": "string", "minLength": 1},
+            "frame_timestamp": {"type": "number", "minimum": 0},
             "action": {"type": "string", "enum": ["click", "type", "key", "select"]},
             "target_label": {"type": "string"},
             "x": {"type": ["number", "null"]},

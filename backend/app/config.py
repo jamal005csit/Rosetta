@@ -4,6 +4,11 @@ import os
 from pathlib import Path
 
 log = logging.getLogger(__name__)
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parents[2] / ".env", override=False)
+except ImportError:
+    log.debug("python-dotenv not installed; using process environment only")
 
 def repo_root() -> Path:
     return Path(__file__).resolve().parents[2]
@@ -26,6 +31,10 @@ def muse_model() -> str:
 
 def max_calls_per_job() -> int:
     try:
-        return int(os.getenv("MAX_CALLS_PER_JOB", "50"))
-    except ValueError:
+        value = int(os.getenv("MAX_CALLS_PER_JOB", "50"))
+        if value < 1:
+            raise ValueError("MAX_CALLS_PER_JOB must be positive")
+        return value
+    except ValueError as exc:
+        log.warning("invalid MAX_CALLS_PER_JOB (%s); using safe default 50", exc)
         return 50

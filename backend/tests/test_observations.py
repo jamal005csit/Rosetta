@@ -1,4 +1,5 @@
 import json
+import pytest
 from pathlib import Path
 import tempfile
 
@@ -30,10 +31,9 @@ def test_observe_validates_and_timestamps():
         assert (jd / "observations.json").exists()
         assert (jd / "muse_calls.jsonl").exists()
 
-def test_observe_fallback_offline():
+def test_observe_refuses_to_fabricate_without_model():
     with tempfile.TemporaryDirectory() as td:
         jd = Path(td)
         (jd / "frames").mkdir()
-        data = observe_job(jd, client=None)
-        assert len(data["observations"]) >= 1
-        assert all("t" in o for o in data["observations"])
+        with pytest.raises(RuntimeError, match="Refusing to invent actions"):
+            observe_job(jd, client=None)

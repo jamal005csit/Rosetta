@@ -2,17 +2,15 @@ import json
 from pathlib import Path
 import tempfile
 
-from backend.stages.stage2_observe import fallback_observations
-from backend.stages.stage3_specify import fallback_appspec, normalize_appspec
+from backend.tests.appspec_fixture import build_appspec
 from backend.stages.stage4_generate import generate_job
 
 def _make_job(td: str) -> Path:
-    jd = Path(td)
-    (jd / "frames").mkdir(exist_ok=True)
-    obs = fallback_observations([])
-    spec = normalize_appspec(fallback_appspec(obs), obs)
-    (jd / "appspec.json").write_text(json.dumps(spec), encoding="utf-8")
-    return jd
+    job_dir = Path(td)
+    (job_dir / "frames").mkdir(exist_ok=True)
+    spec = build_appspec()
+    (job_dir / "appspec.json").write_text(json.dumps(spec), encoding="utf-8")
+    return job_dir
 
 def test_generate_serves_and_seed():
     with tempfile.TemporaryDirectory() as td:
@@ -35,7 +33,6 @@ def test_generate_serves_and_seed():
         blob = ""
         for p in (g / "client/src").rglob("*.tsx"):
             blob += p.read_text(encoding="utf-8")
-        blob += (g / "dist/index.html").read_text(encoding="utf-8")
         for s in spec["screens"]:
             for f in s["fields"]:
                 assert f["id"] in blob, f"missing testid {f['id']}"
@@ -45,11 +42,17 @@ def test_generate_serves_and_seed():
         rules = (g / "client/src/lib/rules.ts").read_text(encoding="utf-8")
         assert "0.14" in rules and "0.05" in rules and "0.12" in rules
         assert (g / "MIGRATION_NOTES.md").exists()
-        assert (g / "dist/index.html").exists()
+        assert (g / "client/index.html").exists()
+        assert not (g / "dist/index.html").exists()
+        assert "npm run build" in pkg["scripts"]["start"]
+        vite = (g / "vite.config.ts").read_text(encoding="utf-8")
+        assert "root: 'client'" in vite and "outDir: '../dist'" in vite
+        server = (g / "server/index.js").read_text(encoding="utf-8")
+        assert "Generated React frontend is not built" in server
 
 def test_shortcuts_preserved():
     with tempfile.TemporaryDirectory() as td:
         jd = _make_job(td)
         generate_job(jd, client=None)
-        dist = (jd / "generated_app/dist/index.html").read_text(encoding="utf-8")
-        assert "F2" in dist and "F5" in dist and "Escape" in dist
+        order = (jd / "generated_app/client/src/screens/Order.tsx").read_text(encoding="utf-8")
+        assert "F2" in order and "F5" in order and "Escape" in order

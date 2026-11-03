@@ -1,12 +1,14 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import Literal
 
-StageId = Literal["ingest", "observe", "specify", "generate", "replay", "score"]
+StageId = Literal["ingest", "observe", "specify", "generate", "replay", "score", "repair", "report"]
+
 
 class Job(BaseModel):
     id: str
     status: str = "created"
     stage: str = "none"
+
 
 class StageStatus(BaseModel):
     job_id: str

@@ -1,8 +1,12 @@
-PY=python3
-.PHONY: selftest legacy-test phase2-test phase3-test phase4-test phase5-test run-legacy api frontend
+PY ?= python3
+
+.PHONY: test selftest legacy-test phase2-test phase3-test phase4-test phase5-test phase6-test frontend-build run-legacy api frontend
+
+test:
+	$(PY) -m pytest backend/tests -v
 
 selftest:
-	$(PY) -m pytest backend/tests/test_selftest.py -v
+	$(PY) -m pytest backend/tests/test_selftest.py backend/tests/test_muse_client.py -v
 	$(PY) -m backend.tools.selftest --mock
 
 legacy-test:
@@ -19,6 +23,12 @@ phase4-test:
 
 phase5-test:
 	$(PY) -m pytest backend/tests/test_export.py backend/tests/test_api_frontend.py backend/tests/test_readme.py -v
+
+phase6-test:
+	$(PY) -m pytest backend/tests/test_muse_client.py backend/tests/test_selftest.py -v
+
+frontend-build:
+	cd frontend && npm install && npm run build
 
 run-legacy:
 	$(PY) legacy_app/app.py

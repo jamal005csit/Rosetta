@@ -1,9 +1,10 @@
-"""Stage runner API: ingest/observe/specify/generate/replay/score/repair/report."""
+"""Stage runner API for the complete Rosetta pipeline."""
 import logging
 from pathlib import Path
+
 from fastapi import APIRouter, HTTPException
 
-from backend.app.store import job_path
+from backend.app.store import existing_job_path
 from backend.muse.client import MuseClient
 from backend.muse.budget import CallBudget
 from backend.app.config import max_calls_per_job
@@ -23,16 +24,24 @@ router = APIRouter()
 def _client(jd: Path) -> MuseClient | None:
     try:
         return MuseClient.from_env(jd, CallBudget(max_calls_per_job()))
-    except Exception as e:
-        log.warning("no muse client: %s", e)
+    except Exception as exc:
+        log.warning("Muse client unavailable for job %s: %s", jd.name, exc)
         return None
+
+
+def _job_dir(job_id: str) -> Path:
+    try:
+        jd = existing_job_path(job_id)
+    except ValueError:
+        raise HTTPException(400, "invalid job id")
+    if jd is None:
+        raise HTTPException(404, "no job")
+    return jd
 
 
 @router.post("/jobs/{job_id}/run/{stage}")
 def run_stage(job_id: str, stage: str) -> dict:
-    jd = job_path(job_id)
-    if not jd.exists():
-        raise HTTPException(404, "no job")
+    jd = _job_dir(job_id)
     c = _client(jd)
     if stage == "ingest":
         return stage1_ingest.ingest(jd)

@@ -20,6 +20,7 @@ from backend.export.packager import export_job
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("rosetta")
+MAX_UPLOAD_BYTES = 500 * 1024 * 1024
 app = FastAPI(title="Rosetta")
 app.add_middleware(
     CORSMiddleware,
@@ -70,8 +71,12 @@ def create_job(f: UploadFile = File(...)) -> dict:
     jp = job_path(jid)
     dest = jp / "upload.mp4"
     try:
+        written = 0
         with dest.open("wb") as output:
             while chunk := f.file.read(1024 * 1024):
+                written += len(chunk)
+                if written > MAX_UPLOAD_BYTES:
+                    raise HTTPException(413, f"video exceeds the {MAX_UPLOAD_BYTES}-byte upload limit")
                 output.write(chunk)
     except Exception:
         # Do not leave a half-created job behind after a failed upload.

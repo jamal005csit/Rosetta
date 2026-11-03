@@ -8,7 +8,7 @@ Last updated: 2026-11-03
 ## Progress
 
 - [x] Phase 0 — Baseline inspection and acceptance mapping completed.
-- [ ] Phase 1 — Backend API integration and job-store correctness/security.
+- [x] Phase 1 — Backend API integration and job-store correctness/security (implementation complete; runtime tests pending).
 - [ ] Phase 2 — Evidence-based observation and AppSpec generation.
 - [ ] Phase 3 — Real React/Vite application build and serving.
 - [ ] Phase 4 — Genuine Playwright replay and parity scoring.
@@ -41,6 +41,19 @@ Last updated: 2026-11-03
 - Keep `main` untouched; work and checkpoint on this repair branch.
 - Mark a phase complete only after its changes and relevant checks are complete. Record test limitations explicitly.
 
+## Phase 1 implementation checkpoint
+
+- Mounted the complete stage router, exposing ingest through report.
+- Changed API reads/stage execution to use non-creating job lookup; nonexistent jobs now return 404 instead of creating directories.
+- Added strict 12-character lowercase hexadecimal job ID validation and resolved-path containment checks.
+- Updated job listing/deletion to operate only on valid job IDs.
+- Added upload cleanup if writing the uploaded video fails and streamed uploads in bounded chunks.
+- Expanded the stage model to include repair and report.
+- Added regression coverage for nonexistent and malformed job IDs.
+- Corrected the event stream framing while keeping it bounded for existing clients.
+
+**Verification status:** source changes and regression tests are committed. Tests have not been executed: the available runtime could not resolve github.com for a repository clone, and the GitHub connection exposes file operations but no local test runner. Do not treat the suite as passing until it is run in a network-enabled checkout.
+
 ## Next action
 
-Start Phase 1 by rereading the current branch files, then fix router mounting and job-store correctness/security. Commit a checkpoint after Phase 1 before moving to Phase 2.
+Proceed to Phase 2: inspect observation, transcription, AppSpec schemas, and evidence handling. Preserve this verification limitation in later checkpoints.

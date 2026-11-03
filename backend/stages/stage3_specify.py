@@ -58,6 +58,9 @@ def validate_appspec(data: dict, observations: dict, job_dir: Path) -> None:
     if len(screen_ids) != len(set(screen_ids)):
         raise ValueError("AppSpec screen IDs must be unique")
     screen_id_set = set(screen_ids)
+    observed_frames = {item.get("frame") for item in observations["observations"] if item.get("frame")}
+    if not observed_frames:
+        raise ValueError("observations contain no timestamp-linked keyframe evidence")
     field_ids = {
         field["id"]
         for screen in data["screens"]
@@ -84,6 +87,8 @@ def validate_appspec(data: dict, observations: dict, job_dir: Path) -> None:
         frame = Path(journey_step["legacy_frame"])
         if frame.is_absolute() or ".." in frame.parts or frame.parts[0] != "frames":
             raise ValueError(f"unsafe legacy frame path: {journey_step['legacy_frame']}")
+        if journey_step["legacy_frame"].replace("\\\\", "/") not in observed_frames:
+            raise ValueError("journey frame is not attached to an observation")
         resolved = (job_dir / frame).resolve()
         if not resolved.is_relative_to(job_dir.resolve()) or not resolved.is_file():
             raise ValueError(f"legacy evidence frame does not exist: {journey_step['legacy_frame']}")

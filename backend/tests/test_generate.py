@@ -75,7 +75,7 @@ def test_model_screen_paths_are_confined_to_generated_screen_source():
     from backend.stages.stage4_generate import _safe_screen_output_path
 
     assert _safe_screen_output_path("client/src/screens/Orders.tsx", "scr_orders") == "client/src/screens/Orders.tsx"
-    assert _safe_screen_output_path("client\\\\src\\\\screens\\\\X.tsx", "scr_orders") == "client/src/screens/X.tsx"
+    assert _safe_screen_output_path(r"client\src\screens\X.tsx", "scr_orders") == "client/src/screens/X.tsx"
     for unsafe in ("../../README.md", "server/index.js", "/tmp/escape.tsx", "C:/outside.tsx"):
         with pytest.raises(ValueError):
             _safe_screen_output_path(unsafe, "scr_orders")

@@ -11,7 +11,7 @@ Last updated: 2026-11-03
 - [x] Phase 1 — Backend API integration and job-store correctness/security (implementation complete; runtime tests pending).
 - [x] Phase 2 — Evidence-based observation and AppSpec generation (implementation complete; runtime tests pending).
 - [x] Phase 3 — Real React/Vite application build and serving (implementation complete; runtime tests pending).
-- [ ] Phase 4 — Genuine Playwright replay and parity scoring.
+- [x] Phase 4 — Genuine Playwright replay and parity scoring (implementation complete; runtime tests pending).
 - [ ] Phase 5 — Genuine Muse-driven repair, limited to generated_app.
 - [ ] Phase 6 — Muse schema validation, retries, budgets, and logging.
 - [ ] Phase 7 — Frontend workflow, report, and ZIP export.

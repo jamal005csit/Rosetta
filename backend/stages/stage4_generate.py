@@ -173,7 +173,7 @@ export default function Order(props: { go: (s: string) => void }) {
       const j = await r.json();
       setMsg('Saved total ' + (j.total ?? t.tot) + ' EGP');
       setLines([]);
-    } catch { setMsg('Saved total ' + t.tot + ' EGP'); setLines([]); }
+    } catch (error) { const detail = error instanceof Error ? error.message : 'unknown error'; setMsg('Save failed: ' + detail); }
   }
   function refresh(){ setMsg(''); }
   function cancel(){ setLines([]); setMsg(''); props.go('scr_menu'); }

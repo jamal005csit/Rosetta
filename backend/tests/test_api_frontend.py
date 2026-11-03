@@ -54,4 +54,6 @@ def test_evidence_file_endpoint_is_limited_to_frames_and_replay():
         response = c.get(f"/jobs/{jid}/files/frames/frame_0001.png")
         assert response.status_code == 200
         assert response.content == b"test frame"
+        portable = c.get(f"/jobs/{jid}/frames/frame_0001.png")
+        assert portable.status_code == 200 and portable.content == b"test frame"
         assert c.get(f"/jobs/{jid}/files/upload.mp4").status_code == 403

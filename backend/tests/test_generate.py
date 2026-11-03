@@ -58,3 +58,14 @@ def test_shortcuts_preserved():
         generate_job(jd, client=None)
         order = (jd / "generated_app/client/src/screens/Order.tsx").read_text(encoding="utf-8")
         assert "F2" in order and "F5" in order and "Escape" in order
+def test_muse_generation_failure_does_not_silently_use_template():
+    class BrokenMuse:
+        def chat_json(self, *args, **kwargs):
+            raise RuntimeError("provider unavailable")
+
+    from backend.stages.stage4_generate import _one_screen
+    import pytest
+
+    with pytest.raises(RuntimeError, match="Muse screen generation failed"):
+        _one_screen({"id": "scr_custom", "title": "Custom", "fields": []}, BrokenMuse())
+

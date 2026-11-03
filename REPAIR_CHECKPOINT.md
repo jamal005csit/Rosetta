@@ -15,7 +15,7 @@ Last updated: 2026-11-03
 - [x] Phase 5 — Genuine Muse-driven repair, limited to generated_app (implementation complete; runtime tests pending).
 - [x] Phase 6 — Muse schema validation, retries, budgets, and logging (implementation complete; runtime tests pending; provider compatibility unverified).
 - [x] Phase 7 — Frontend workflow, report, and ZIP export (implementation complete; runtime tests pending).
-- [ ] Phase 8 — Acceptance tests AT01–AT15 and Windows setup documentation.
+- [x] Phase 8 — Acceptance tests AT01–AT15 and Windows setup documentation (implementation and static audit complete; execution pending).
 
 ## Phase 0 findings carried forward
 
@@ -81,3 +81,28 @@ Last updated: 2026-11-03
 ## Next action
 
 Proceed to Phase 4: remove fabricated Playwright/replay evidence and make parity scoring depend on real browser execution, real screenshots, and actual DOM/application state.
+
+
+## Phase 8 implementation checkpoint
+
+- Replaced the obsolete offline-demo instructions with a Windows PowerShell setup and real pipeline workflow.
+- Documented Python 3.11, Node/npm, FFmpeg, Playwright Chromium, Muse credentials, local Whisper model, CLI usage, API/frontend startup, tests, scoring, repair limits, and export contents.
+- Added root `.env` loading with process-environment precedence and documented all supported environment settings.
+- Updated CLI tools so they no longer call removed synthetic fallbacks; model-dependent phases require Muse configuration.
+- Updated Makefile test targets, pytest discovery configuration, README checks, and Git ignore rules for secrets/runtime artifacts.
+- Tightened report/export prerequisites so a report cannot be generated without a real AppSpec and parity result, and an export cannot be created without a built React app and parity artifact.
+- Made report screenshot links portable: they work through the live API and relative to the exported ZIP.
+- Performed a static cross-file audit of stage orchestration, schemas, job lifecycle, evidence paths, scoring, repair boundaries, frontend calls, report links, and export exclusions.
+
+## Final verification state
+
+- All eight repair phases have implementation checkpoints committed on `repair/rosetta-full-repair`.
+- The branch comparison reports **104 commits ahead of `main`, 0 behind**. The `main` branch was not modified.
+- GitHub file operations and commits succeeded.
+- **Not verified:** automated Python tests, TypeScript/Vite compilation, Windows PowerShell execution, npm dependency installation, FFmpeg extraction/timestamp mapping, faster-whisper transcription, Chromium replay, and live Meta endpoint compatibility.
+- The local checkout attempt could not resolve `github.com` in this execution environment. The GitHub connection provides repository read/write operations but no test runner, so no test or build success is claimed.
+- Before merging, run `python -m pytest backend/tests -v`, `cd frontend; npm install; npm run build`, then execute one real recording end-to-end with a valid Muse endpoint/key and confirm the resulting screenshots, parity, repair history, report, and ZIP.
+
+## Resume point
+
+Start with runtime verification in a network-enabled Windows PowerShell checkout. Fix any failures, update this checkpoint with actual test/build results, then open a pull request for review. Do not merge to `main` until runtime verification passes.

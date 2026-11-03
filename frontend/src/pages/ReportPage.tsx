@@ -31,7 +31,7 @@ export default function ReportPage(): JSX.Element {
       <p>
         Parity: {parity} Pass: {String(pass)}
       </p>
-      <StepTable steps={steps} />
+      <StepTable steps={steps} jobId={id ?? ''} />
       <p>
         <a href={`/jobs/${id}/report.html`}>Full report.html</a> | <a href={`/jobs/${id}/export.zip`}>export.zip</a>
       </p>

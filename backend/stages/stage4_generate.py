@@ -469,7 +469,7 @@ def generate_job(job_dir: Path, client: Any | None = None) -> dict:
     _write(gdir / "MIGRATION_NOTES.md", _migration_notes(spec))
     _write(
         gdir / "README.md",
-        "# Generated app\\n\\nRun `npm install`, then `npm start`. The start script builds the Vite React app and launches the Express server on PORT or 3000.\\n",
+        "# Generated app\n\nRun `npm install`, then `npm start`. The start script builds the Vite React app and launches the Express server on PORT or 3000.\n",
     )
 
     # Verify generated React source, not a separately fabricated static HTML page.

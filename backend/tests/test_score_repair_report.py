@@ -9,7 +9,7 @@ from backend.tests.appspec_fixture import build_appspec
 from backend.stages.stage4_generate import generate_job
 from backend.stages.stage5_replay import replay_job
 from backend.stages.stage6_score import score_job
-from backend.stages.stage6_repair import repair_job
+from backend.stages.stage6_repair import repair_job, _allowed_source_path
 from backend.stages.stage6_report import generate_report
 
 
@@ -105,3 +105,18 @@ def test_report_shows_all_sections():
         assert "Parity:" in h and "Per-step table" in h
         assert "Coverage ledger" in h
         assert "Repair history" in h and "Unresolved issues" in h
+
+
+def test_repair_patch_paths_are_confined_to_existing_generated_source():
+    with tempfile.TemporaryDirectory() as td:
+        generated = Path(td) / "generated_app"
+        source = generated / "client" / "src" / "App.tsx"
+        source.parent.mkdir(parents=True)
+        source.write_text("export default function App() {}", encoding="utf-8")
+        assert _allowed_source_path(generated, "client/src/App.tsx") == source
+        with pytest.raises(ValueError):
+            _allowed_source_path(generated, "../outside.py")
+        with pytest.raises(ValueError):
+            _allowed_source_path(generated, "dist/index.html")
+        with pytest.raises(ValueError):
+            _allowed_source_path(generated, "client/src/NewFile.tsx")

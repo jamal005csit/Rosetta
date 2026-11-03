@@ -2,17 +2,15 @@ import json
 from pathlib import Path
 import tempfile
 
-from backend.stages.stage2_observe import fallback_observations
-from backend.stages.stage3_specify import fallback_appspec, normalize_appspec
+from backend.tests.appspec_fixture import build_appspec
 from backend.stages.stage4_generate import generate_job
 
 def _make_job(td: str) -> Path:
-    jd = Path(td)
-    (jd / "frames").mkdir(exist_ok=True)
-    obs = fallback_observations([])
-    spec = normalize_appspec(fallback_appspec(obs), obs)
-    (jd / "appspec.json").write_text(json.dumps(spec), encoding="utf-8")
-    return jd
+    job_dir = Path(td)
+    (job_dir / "frames").mkdir(exist_ok=True)
+    spec = build_appspec()
+    (job_dir / "appspec.json").write_text(json.dumps(spec), encoding="utf-8")
+    return job_dir
 
 def test_generate_serves_and_seed():
     with tempfile.TemporaryDirectory() as td:

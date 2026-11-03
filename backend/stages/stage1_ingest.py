@@ -98,8 +98,16 @@ def ingest(job_dir: Path) -> dict:
     video = job_dir / "upload.mp4"
     frames = extract_keyframes(video, job_dir / "frames")
     transcript = extract_transcript(video, job_dir)
-    return {
+    result = {
         "frames": [str(frame) for frame in frames],
         "transcript": transcript,
         "transcript_available": bool(transcript.strip()),
     }
+    (job_dir / "ingest.json").write_text(
+        json.dumps({
+            "frame_count": len(frames),
+            "transcript_available": result["transcript_available"],
+        }, indent=2),
+        encoding="utf-8",
+    )
+    return result

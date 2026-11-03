@@ -2,31 +2,34 @@ import json
 from pathlib import Path
 import tempfile
 
-from backend.stages.stage2_observe import fallback_observations
-from backend.stages.stage3_specify import fallback_appspec, normalize_appspec
-from backend.stages.stage4_generate import generate_job
-from backend.stages.stage5_replay import replay_job
+import pytest
+
+from backend.tests.appspec_fixture import build_appspec
+from backend.stages import stage5_replay
+
 
 def _job(td: str) -> Path:
-    jd = Path(td)
-    (jd / "frames").mkdir(exist_ok=True)
-    obs = fallback_observations([])
-    spec = normalize_appspec(fallback_appspec(obs), obs)
-    (jd / "appspec.json").write_text(json.dumps(spec), encoding="utf-8")
-    generate_job(jd, client=None)
-    return jd
+    job_dir = Path(td)
+    frames = job_dir / "frames"
+    frames.mkdir(exist_ok=True)
+    for number in range(1, 9):
+        (frames / f"frame_{number:04d}.png").write_bytes(b"test-only legacy image fixture")
+    (job_dir / "appspec.json").write_text(json.dumps(build_appspec()), encoding="utf-8")
+    return job_dir
 
-def test_replay_shots_dom_and_determinism():
+
+def test_replay_fails_closed_when_generated_app_cannot_start(monkeypatch):
     with tempfile.TemporaryDirectory() as td:
-        jd = _job(td)
-        s1 = replay_job(jd)
-        s2 = replay_job(jd)
-        assert s1 == s2, "two runs must give identical step lists"
-        assert len(s1) >= 1
-        spec = json.loads((jd / "appspec.json").read_text(encoding="utf-8"))
-        assert len(s1) == len(spec["journey"])
-        for st in s1:
-            shot = jd / "replay" / st["screenshot"]
-            dom = jd / "replay" / st["dom"]
-            assert shot.exists() and shot.stat().st_size > 0
-            assert dom.exists() and st["target"] in dom.read_text(encoding="utf-8")
+        job_dir = _job(td)
+
+        def unavailable(_job_dir):
+            raise RuntimeError("generated app unavailable in unit test")
+
+        monkeypatch.setattr(stage5_replay, "_start_server", unavailable)
+        with pytest.raises(RuntimeError, match="generated app unavailable"):
+            stage5_replay.replay_job(job_dir)
+
+        replay_dir = job_dir / "replay"
+        assert not (replay_dir / "steps.json").exists()
+        assert not list(replay_dir.glob("new_step_*.png"))
+        assert not list(replay_dir.glob("dom_step_*.html"))

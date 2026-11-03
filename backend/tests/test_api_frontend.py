@@ -52,3 +52,19 @@ def test_full_pipeline_via_api_then_export_and_report():
         assert "report.html" in names
         assert "MIGRATION_NOTES.md" in names
         assert any(n.startswith("generated_app/") for n in names)
+
+def test_missing_and_malformed_job_ids_do_not_create_directories():
+    with tempfile.TemporaryDirectory() as td:
+        c = _client_for(td)
+        missing = "abcdef123456"
+        response = c.get(f"/jobs/{missing}/status")
+        assert response.status_code == 404
+        assert not (Path(td) / missing).exists()
+
+        malformed = "../outside"
+        response = c.get(f"/jobs/{malformed}/status")
+        assert response.status_code == 400
+        assert not (Path(td).parent / "outside").exists()
+
+        assert c.post(f"/jobs/{missing}/run/report").status_code == 404
+        assert not (Path(td) / missing).exists()

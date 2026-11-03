@@ -14,11 +14,35 @@ from backend.stages.stage6_report import generate_report
 
 def _demo_job(td: str) -> Path:
     job_dir = Path(td)
-    (job_dir / "frames").mkdir(exist_ok=True)
+    frames = job_dir / "frames"
+    replay_dir = job_dir / "replay"
+    frames.mkdir(exist_ok=True)
+    replay_dir.mkdir(exist_ok=True)
     spec = build_appspec()
     (job_dir / "appspec.json").write_text(json.dumps(spec), encoding="utf-8")
-    generate_job(job_dir, client=None)
-    replay_job(job_dir)
+    replay_rows = []
+    for journey_step in spec["journey"]:
+        number = journey_step["step"]
+        legacy = job_dir / journey_step["legacy_frame"]
+        legacy.parent.mkdir(parents=True, exist_ok=True)
+        legacy.write_bytes(b"test-only legacy frame fixture")
+        screenshot_name = f"new_step_{number:02d}.png"
+        snapshot_name = f"snapshot_step_{number:02d}.json"
+        (replay_dir / screenshot_name).write_bytes(b"test-only browser screenshot fixture")
+        snapshot = {
+            "active_screen": journey_step["expect"]["screen"],
+            "text": "",
+            "fields": {},
+            "title": "test fixture",
+            "url": "http://test.invalid"
+        }
+        (replay_dir / snapshot_name).write_text(json.dumps(snapshot), encoding="utf-8")
+        replay_rows.append({
+            "step": number, "success": True, "active_screen": snapshot["active_screen"],
+            "screenshot": screenshot_name, "snapshot": snapshot_name,
+            "dom": f"dom_step_{number:02d}.html", "error": None
+        })
+    (replay_dir / "steps.json").write_text(json.dumps(replay_rows), encoding="utf-8")
     return job_dir
 
 

@@ -75,18 +75,29 @@ export default function Login(props: { go: (s: string) => void }) {
 }
 """
 
-def _menu_tsx() -> str:
-    return """import React from 'react';
-export default function Menu(props: { go: (s: string) => void }) {
+def _field_testid(screen: dict, keywords: tuple[str, ...], fallback: str) -> str:
+    for field in screen.get("fields", []):
+        identity = f"{field.get('id', '')} {field.get('label', '')}".lower()
+        if any(keyword in identity for keyword in keywords):
+            return str(field.get("id") or fallback)
+    return fallback
+
+
+def _menu_tsx(screen: dict) -> str:
+    customer_id = _field_testid(screen, ("customer", "client"), "fld_menu_customers")
+    order_id = _field_testid(screen, ("order", "sale"), "fld_menu_order")
+    report_id = _field_testid(screen, ("report", "summary"), "fld_menu_report")
+    return f"""import React from 'react';
+export default function Menu(props: {{ go: (s: string) => void }}) {{
   return (
-    <div style={{maxWidth:480,margin:'40px auto',fontFamily:'system-ui'}}>
+    <div style={{{{maxWidth:480,margin:'40px auto',fontFamily:'system-ui'}}}}>
       <h2>Main menu</h2>
-      <div><button data-testid="fld_menu_customers" onClick={()=>props.go('scr_customers')}>Customer lookup</button></div>
-      <div><button data-testid="fld_menu_order" onClick={()=>props.go('scr_order')}>Order entry</button></div>
-      <div><button data-testid="fld_menu_report" onClick={()=>props.go('scr_report')}>Daily report</button></div>
+      <div><button data-testid="{customer_id}" onClick={{()=>props.go('scr_customers')}}>Customer lookup</button></div>
+      <div><button data-testid="{order_id}" onClick={{()=>props.go('scr_order')}}>Order entry</button></div>
+      <div><button data-testid="{report_id}" onClick={{()=>props.go('scr_report')}}>Daily report</button></div>
     </div>
   );
-}
+}}
 """
 
 def _customers_tsx() -> str:
@@ -192,29 +203,30 @@ export default function Order(props: { go: (s: string) => void }) {
 }
 """
 
-def _report_tsx() -> str:
-    return """import React, { useEffect, useState } from 'react';
-export default function Report(props: { go: (s: string) => void }) {
+def _report_tsx(screen: dict) -> str:
+    orders_id = _field_testid(screen, ("orders", "transactions", "records"), "fld_report_list")
+    return f"""import React, {{ useEffect, useState }} from 'react';
+export default function Report(props: {{ go: (s: string) => void }}) {{
   const [orders, setOrders] = useState<any[]>([]);
-  async function load() {
-    try { const r = await fetch('/api/orders'); setOrders(await r.json()); }
-    catch { setOrders([]); }
-  }
-  useEffect(()=>{ load(); },[]);
-  useEffect(()=>{
-    function h(e: KeyboardEvent){ if(e.key==='F5'){e.preventDefault();load();} if(e.key==='Escape') props.go('scr_menu'); }
+  async function load() {{
+    try {{ const r = await fetch('/api/orders'); setOrders(await r.json()); }}
+    catch {{ setOrders([]); }}
+  }}
+  useEffect(()=>{{ load(); }},[]);
+  useEffect(() => {{
+    function h(e: KeyboardEvent){{ if(e.key==='F5'){{e.preventDefault();load();}} if(e.key==='Escape') props.go('scr_menu'); }}
     window.addEventListener('keydown',h);
     return ()=>window.removeEventListener('keydown',h);
-  });
+  }});
   return (
-    <div style={{maxWidth:640,margin:'20px auto',fontFamily:'system-ui'}}>
+    <div style={{{{maxWidth:640,margin:'20px auto',fontFamily:'system-ui'}}}}>
       <h2>Daily report</h2>
-      <button onClick={load}>Refresh</button>
-      <ul data-testid="fld_report_list">{orders.length===0 ? <li>(no orders today)</li> : orders.map((o,i)=><li key={i}>{o.cust} total={o.total}</li>)}</ul>
-      <button onClick={()=>props.go('scr_menu')}>Back</button>
+      <button onClick={{load}}>Refresh</button>
+      <ul data-testid="{orders_id}">{{orders.length===0 ? <li>(no orders today)</li> : orders.map((o,i)=><li key={{i}}>{{o.cust}} total={{o.total}}</li>)}}</ul>
+      <button onClick={{()=>props.go('scr_menu')}}>Back</button>
     </div>
   );
-}
+}}
 """
 
 def _generic_tsx(screen: dict) -> str:
@@ -256,13 +268,13 @@ def fallback_screen(screen: dict) -> tuple[str, str]:
     if sid == "scr_login":
         return (f"client/src/screens/{name}.tsx", _login_tsx())
     if sid == "scr_menu":
-        return (f"client/src/screens/{name}.tsx", _menu_tsx())
+        return (f"client/src/screens/{name}.tsx", _menu_tsx(screen))
     if sid == "scr_customers":
         return (f"client/src/screens/{name}.tsx", _customers_tsx())
     if sid == "scr_order":
         return (f"client/src/screens/{name}.tsx", _order_tsx())
     if sid == "scr_report":
-        return (f"client/src/screens/{name}.tsx", _report_tsx())
+        return (f"client/src/screens/{name}.tsx", _report_tsx(screen))
     return (f"client/src/screens/{name}.tsx", _generic_tsx(screen))
 
 def _app_tsx(screens: list[dict]) -> str:

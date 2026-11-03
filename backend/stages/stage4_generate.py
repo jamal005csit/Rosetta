@@ -280,7 +280,9 @@ export default function App() {{
   function go(s: string) {{ setCur(s); }}
   return (
     <div>
+      <main data-testid="active-screen" data-screen-id={cur}>
 {body}
+      </main>
     </div>
   );
 }}

@@ -15,14 +15,16 @@ log = logging.getLogger(__name__)
 MAX_ROUNDS = 3
 REPAIR_SCHEMA = {
     "type": "object",
+    "additionalProperties": False,
     "required": ["cause", "patches"],
     "properties": {
         "cause": {"type": "string", "minLength": 1},
         "patches": {
-            "type": "array", "minItems": 1, "maxItems": 3,
+            "type": "array", "minItems": 0, "maxItems": 3,
             "items": {
                 "type": "object",
                 "required": ["path", "content"],
+                "additionalProperties": False,
                 "properties": {
                     "path": {"type": "string", "minLength": 1},
                     "content": {"type": "string", "minLength": 1}

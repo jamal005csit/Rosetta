@@ -7,6 +7,7 @@ from pathlib import Path
 import jsonschema
 
 from backend.muse.client import MuseClient
+from backend.stages.stage2_observe import validate_observations
 
 log = logging.getLogger(__name__)
 
@@ -88,7 +89,7 @@ def validate_appspec(data: dict, observations: dict, job_dir: Path) -> None:
         frame = Path(journey_step["legacy_frame"])
         if frame.is_absolute() or ".." in frame.parts or frame.parts[0] != "frames":
             raise ValueError(f"unsafe legacy frame path: {journey_step['legacy_frame']}")
-        if journey_step["legacy_frame"].replace("\\\\", "/") not in observed_frames:
+        if journey_step["legacy_frame"].replace("\\", "/") not in observed_frames:
             raise ValueError("journey frame is not attached to an observation")
         resolved = (job_dir / frame).resolve()
         if not resolved.is_relative_to(job_dir.resolve()) or not resolved.is_file():
@@ -105,6 +106,7 @@ def specify_job(job_dir: Path, client: MuseClient | None = None) -> dict:
     if not obs_path.is_file():
         raise FileNotFoundError("observations.json is required before AppSpec generation")
     observations = json.loads(obs_path.read_text(encoding="utf-8"))
+    validate_observations(observations)
     spec_prompt = load_prompt("specifier.md")
     rule_prompt = load_prompt("rule_miner.md")
     prompt = (

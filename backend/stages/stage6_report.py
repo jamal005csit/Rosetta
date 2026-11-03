@@ -60,7 +60,7 @@ def generate_report(job_dir: Path) -> Path:
         fixes = "".join(f"<li>step {f.get('step')}: {html.escape(str(f.get('cause','')))} {html.escape(str(f.get('patch','')))} "
                         f"s {f.get('s_before')} -&gt; {f.get('s_after')}</li>" for f in r.get("fixes", []))
         rep_html += f"<li>round {r.get('round')}: {r.get('parity_before')} -&gt; {r.get('parity_after')} reran_all={r.get('reran_all')}<ul>{fixes}</ul></li>"
-    rep_html = rep_html or "<li>no repairs (already passing)</li>"
+    rep_html = rep_html or "<li>No repair history recorded.</li>"
     un_html = "".join(f"<li>{html.escape(u)}</li>" for u in unresolved) or "<li>none</li>"
     app_name = html.escape(str(spec.get("app", {}).get("name", "Rosetta")))
     out_html = f"""<!doctype html><html><head><meta charset="utf-8"><title>Rosetta Parity Report</title>

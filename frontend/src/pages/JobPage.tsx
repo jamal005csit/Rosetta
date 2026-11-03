@@ -7,75 +7,115 @@ const STAGES = ['ingest', 'observe', 'specify', 'generate', 'replay', 'score', '
 
 export default function JobPage(): JSX.Element {
   const { id } = useParams<{ id: string }>();
-  const nav = useNavigate();
+  const navigate = useNavigate();
   const [stages, setStages] = useState<Record<string, boolean>>({});
-  const [msg, setMsg] = useState('');
+  const [message, setMessage] = useState('');
+  const [running, setRunning] = useState(false);
+  const [runningStage, setRunningStage] = useState('');
   const jobId = id ?? '';
 
   useEffect(() => {
     let alive = true;
     async function poll(): Promise<void> {
       try {
-        const s = await getStatus(jobId);
-        if (alive) setStages(s.stages);
-      } catch {
-        /* backend may be down in dev */
+        const status = await getStatus(jobId);
+        if (alive) setStages(status.stages);
+      } catch (error) {
+        if (alive) setMessage(error instanceof Error ? error.message : 'Could not load job status');
       }
     }
     void poll();
-    const t = window.setInterval(() => void poll(), 1000);
-    const es = new EventSource(eventsUrl(jobId));
-    es.onmessage = (ev) => {
+    const interval = window.setInterval(() => void poll(), 1500);
+    const events = new EventSource(eventsUrl(jobId));
+    events.onmessage = (event) => {
       try {
-        const j = JSON.parse(ev.data as string) as { stages: Record<string, boolean> };
-        if (alive && j.stages) setStages(j.stages);
+        const payload = JSON.parse(event.data as string) as { stages: Record<string, boolean> };
+        if (alive && payload.stages) setStages(payload.stages);
       } catch {
-        /* ignore */
+        // Ignore malformed event payloads; status polling remains authoritative.
       }
     };
-    es.onerror = () => es.close();
+    events.onerror = () => events.close();
     return () => {
       alive = false;
-      window.clearInterval(t);
-      es.close();
+      window.clearInterval(interval);
+      events.close();
     };
   }, [jobId]);
 
-  async function run(s: string): Promise<void> {
+  async function refreshStatus(): Promise<void> {
+    const status = await getStatus(jobId);
+    setStages(status.stages);
+  }
+
+  async function runOne(stage: string): Promise<void> {
+    if (running) return;
+    setRunning(true);
+    setRunningStage(stage);
+    setMessage('Running ' + stage + '…');
     try {
-      setMsg('running ' + s);
-      await runStage(jobId, s);
-      const st = await getStatus(jobId);
-      setStages(st.stages);
-      setMsg(s + ' done');
-    } catch (e) {
-      setMsg(e instanceof Error ? e.message : 'run error');
+      await runStage(jobId, stage);
+      await refreshStatus();
+      setMessage(stage + ' completed');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Stage failed');
+    } finally {
+      setRunning(false);
+      setRunningStage('');
+    }
+  }
+
+  async function runPipeline(): Promise<void> {
+    if (running) return;
+    setRunning(true);
+    try {
+      for (const stage of STAGES) {
+        setRunningStage(stage);
+        setMessage('Running ' + stage + '…');
+        await runStage(jobId, stage);
+        await refreshStatus();
+        setMessage(stage + ' completed');
+      }
+      setMessage('Pipeline completed');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Pipeline stopped');
+    } finally {
+      setRunning(false);
+      setRunningStage('');
     }
   }
 
   async function onDelete(): Promise<void> {
-    await deleteJob(jobId);
-    nav('/');
+    if (running) return;
+    try {
+      await deleteJob(jobId);
+      navigate('/');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Delete failed');
+    }
   }
 
   return (
     <div>
       <h2>Job {jobId}</h2>
       <StageProgress stages={stages} />
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {STAGES.map((s) => (
-          <button key={s} onClick={() => void run(s)}>
-            Run {s}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+        <button disabled={running} onClick={() => void runPipeline()}>
+          {running ? 'Pipeline running…' : 'Run full pipeline'}
+        </button>
+        {STAGES.map((stage) => (
+          <button key={stage} disabled={running} onClick={() => void runOne(stage)}>
+            {runningStage === stage ? 'Running…' : 'Run ' + stage}
           </button>
         ))}
       </div>
-      <p>{msg}</p>
+      <p role="status">{message}</p>
       <p>
         <Link to={`/jobs/${jobId}/report`}>View report</Link> |{' '}
         <a href={`/jobs/${jobId}/report.html`}>report.html</a> |{' '}
         <a href={`/jobs/${jobId}/export.zip`}>export.zip</a>
       </p>
-      <button onClick={() => void onDelete()}>Delete job</button>
+      <button disabled={running} onClick={() => void onDelete()}>Delete job</button>
     </div>
   );
 }

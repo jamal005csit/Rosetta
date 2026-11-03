@@ -1,5 +1,6 @@
 """Stage runner API for the complete Rosetta pipeline."""
 import logging
+import shutil
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
@@ -31,6 +32,35 @@ def _client(jd: Path) -> MuseClient | None:
         return None
 
 
+
+_STAGE_OUTPUTS = {
+    "ingest": ("frame_timestamps.json", "transcript.txt"),
+    "observe": ("observations.json",),
+    "specify": ("appspec.json",),
+    "generate": ("generated_app",),
+    "replay": ("replay",),
+    "score": ("parity.json",),
+    "repair": ("repair_history.json",),
+    "report": ("report.html",),
+}
+_STAGE_ORDER = ("ingest", "observe", "specify", "generate", "replay", "score", "repair", "report")
+
+
+def _invalidate_from(jd: Path, stage: str) -> None:
+    """Remove the rerun stage's old outputs and all downstream artifacts."""
+    start = _STAGE_ORDER.index(stage)
+    for stage_name in _STAGE_ORDER[start:]:
+        for relative in _STAGE_OUTPUTS[stage_name]:
+            target = jd / relative
+            if target.is_dir():
+                shutil.rmtree(target)
+            elif target.exists():
+                target.unlink()
+    export_file = jd / "export.zip"
+    if export_file.exists():
+        export_file.unlink()
+
+
 def _job_dir(job_id: str) -> Path:
     try:
         jd = existing_job_path(job_id)
@@ -44,6 +74,9 @@ def _job_dir(job_id: str) -> Path:
 @router.post("/jobs/{job_id}/run/{stage}")
 def run_stage(job_id: str, stage: str) -> dict:
     jd = _job_dir(job_id)
+    if stage not in _STAGE_ORDER:
+        raise HTTPException(400, "unknown stage")
+    _invalidate_from(jd, stage)
     c = _client(jd)
     if stage == "ingest":
         return stage1_ingest.ingest(jd)

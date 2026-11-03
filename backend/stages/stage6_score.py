@@ -177,6 +177,7 @@ def score_job(job_dir: Path, client: Any | None = None) -> dict:
 
         replay_entry = replay_map.get(number)
         screenshot_path = None
+        snapshot_path = None
         snapshot = None
         if replay_entry:
             screenshot_path = _safe_replay_file(replay_dir, str(replay_entry.get("screenshot", "")), "screenshot")

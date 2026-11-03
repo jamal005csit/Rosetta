@@ -36,7 +36,10 @@ def build_appspec() -> dict:
         "flows": [],
         "rules": [],
         "sample_data": {
-            "customers": [{"id": "C001", "name": "Sample Customer", "limit": 5000}],
+            "customers": [
+                {"id": "C001", "name": "Sample Customer", "limit": 5000},
+                {"id": "C002", "name": "Second Customer", "limit": 2500}
+            ],
             "items": [{"sku": "ITM-01", "name": "Sample Item", "price": 100}]
         },
         "journey": journey,

@@ -11,7 +11,6 @@ from .store import (
     new_job_id,
     job_path,
     existing_job_path,
-    validate_job_id,
     list_jobs,
     delete_job,
 )
@@ -156,7 +155,7 @@ async def events(job_id: str) -> StreamingResponse:
         # an arbitrary five-poll snapshot. Stop when the client disconnects.
         while True:
             st = {"job_id": job_id, "stages": stage_flags(jd)}
-            yield f"data: {json.dumps(st)}\\n\\n"
+            yield f"data: {json.dumps(st)}\n\n"
             await asyncio.sleep(1)
 
     return StreamingResponse(gen(), media_type="text/event-stream")

@@ -57,3 +57,18 @@ def test_evidence_file_endpoint_is_limited_to_frames_and_replay():
         portable = c.get(f"/jobs/{jid}/frames/frame_0001.png")
         assert portable.status_code == 200 and portable.content == b"test frame"
         assert c.get(f"/jobs/{jid}/files/upload.mp4").status_code == 403
+
+def test_upload_rejects_oversized_recording_and_cleans_job():
+    with tempfile.TemporaryDirectory() as td:
+        c = _client_for(td)
+        from backend.app import main
+        original_limit = main.MAX_UPLOAD_BYTES
+        main.MAX_UPLOAD_BYTES = 8
+        try:
+            files = {"f": ("large.mp4", io.BytesIO(b"0123456789"), "video/mp4")}
+            response = c.post("/jobs", files=files)
+            assert response.status_code == 413
+            assert c.get("/jobs").json() == {"jobs": []}
+        finally:
+            main.MAX_UPLOAD_BYTES = original_limit
+

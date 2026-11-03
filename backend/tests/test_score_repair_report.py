@@ -3,6 +3,7 @@ from pathlib import Path
 import tempfile
 
 import jsonschema
+import pytest
 
 from backend.tests.appspec_fixture import build_appspec
 from backend.stages.stage4_generate import generate_job
@@ -68,28 +69,29 @@ def test_score_stores_frames_verdict_reason():
             assert s["new_screenshot"].split("/")[-1] in s["reason"]
 
 
-def test_repair_loop_stops_and_reruns_all():
+def test_repair_fails_closed_without_muse_and_preserves_appspec():
     with tempfile.TemporaryDirectory() as td:
-        jd = _demo_job(td)
-        spec_before = (jd / "appspec.json").read_text(encoding="utf-8")
-        dist = jd / "generated_app" / "dist" / "index.html"
-        html = dist.read_text(encoding="utf-8")
-        # break State: remove a screen section
-        html2 = html.replace('id="scr_order"', 'id="scr_order_BROKEN"')
-        assert html2 != html
-        dist.write_text(html2, encoding="utf-8")
-        bad = score_job(jd, client=None)
-        assert any(s["state"] < 1.0 for s in bad["steps"])
-        rep = repair_job(jd, client=None, max_rounds=3)
-        assert rep["rounds"] <= 3
-        assert (jd / "repair_history.json").exists()
-        assert rep["rounds"] >= 1
-        for r in rep["history"]:
-            assert r["reran_all"] is True
-            assert r["steps_reran"] == len(json.loads(spec_before)["journey"])
-        final = json.loads((jd / "parity.json").read_text(encoding="utf-8"))
-        assert final["parity"] >= 90
-        assert (jd / "appspec.json").read_text(encoding="utf-8") == spec_before
+        job_dir = _demo_job(td)
+        spec_before = (job_dir / "appspec.json").read_text(encoding="utf-8")
+        replay_path = job_dir / "replay" / "steps.json"
+        replay_rows = json.loads(replay_path.read_text(encoding="utf-8"))
+        replay_rows[0]["active_screen"] = "scr_wrong"
+        replay_path.write_text(json.dumps(replay_rows), encoding="utf-8")
+
+        with pytest.raises(RuntimeError, match="configured Muse client"):
+            repair_job(job_dir, client=None, max_rounds=3)
+
+        assert (job_dir / "appspec.json").read_text(encoding="utf-8") == spec_before
+        assert not (job_dir / "repair_history.json").exists()
+
+
+def test_repair_stops_when_parity_already_passes():
+    with tempfile.TemporaryDirectory() as td:
+        job_dir = _demo_job(td)
+        result = repair_job(job_dir, client=None, max_rounds=3)
+        assert result["rounds"] == 0
+        assert result["pass"] is True
+        assert result["history"] == []
 
 
 def test_report_shows_all_sections():

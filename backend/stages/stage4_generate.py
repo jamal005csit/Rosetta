@@ -303,7 +303,12 @@ def _index_html(app_name: str) -> str:
 def _vite_config() -> str:
     return """import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-export default defineConfig({ plugins: [react()], build: { outDir: 'dist' } });
+export default defineConfig({
+  root: 'client',
+  plugins: [react()],
+  server: { proxy: { '/api': 'http://127.0.0.1:3000' } },
+  build: { outDir: '../dist', emptyOutDir: true }
+});
 """
 
 def _tsconfig() -> str:
@@ -314,7 +319,7 @@ def _package_json(app_name: str) -> str:
         "name": app_name.lower().replace(" ", "-") + "-generated",
         "version": "1.0.0",
         "private": True,
-        "scripts": {"start": "node server/index.js", "build": "vite build"},
+        "scripts": {"start": "npm run build && node server/index.js", "build": "vite build"},
         "dependencies": {"express": "^4.18.2", "better-sqlite3": "^9.4.3"},
         "devDependencies": {"vite": "^5.0.0", "@vitejs/plugin-react": "^4.2.0",
             "react": "^18.2.0", "react-dom": "^18.2.0", "typescript": "^5.3.0"}
@@ -363,7 +368,7 @@ app.get('/api/health', (req, res) => res.json({ ok: true, mode: store.mode }));
 app.get('/api/customers', (req, res) => {
   const q = (req.query.q || '').toLowerCase();
   let rows;
-  if (store.mode === 'sqlite') rows = store.db.prepare("SELECT id,name,climit as \"limit\" FROM customers").all();
+  if (store.mode === 'sqlite') rows = store.db.prepare("SELECT id,name,climit as \\"limit\\" FROM customers").all();
   else rows = store.seed.customers || [];
   if (q) rows = rows.filter(c => ((c.id || '') + (c.name || '')).toLowerCase().includes(q));
   res.json(rows);
@@ -385,65 +390,29 @@ app.get('/api/orders', (req, res) => {
 });
 app.post('/api/orders', (req, res) => {
   const { cust, lines, total } = req.body || {};
+  if (!cust || !Array.isArray(lines) || !Number.isFinite(Number(total))) {
+    return res.status(400).json({ error: 'cust, lines, and numeric total are required' });
+  }
   if (store.mode === 'sqlite') {
-    store.db.prepare("INSERT INTO orders (cust,lines,total) VALUES (?,?,?)").run(cust, JSON.stringify(lines || []), total);
+    store.db.prepare("INSERT INTO orders (cust,lines,total) VALUES (?,?,?)").run(cust, JSON.stringify(lines), Number(total));
   } else {
     const f = path.join(ROOT, 'data', 'orders.json');
     const cur = fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf-8')) : [];
-    cur.push({ cust, lines, total });
+    cur.push({ cust, lines, total: Number(total) });
     fs.writeFileSync(f, JSON.stringify(cur, null, 2));
   }
-  res.json({ ok: true, total });
+  res.json({ ok: true, total: Number(total) });
 });
 if (fs.existsSync(DIST)) app.use(express.static(DIST));
-else app.use(express.static(path.join(ROOT, 'client', 'src')));
 app.get('*', (req, res) => {
-  const idx = path.join(DIST, 'index.html');
-  if (fs.existsSync(idx)) return res.sendFile(idx);
-  return res.sendFile(path.join(ROOT, 'dist', 'index.html'));
+  const indexFile = path.join(DIST, 'index.html');
+  if (fs.existsSync(indexFile)) return res.sendFile(indexFile);
+  return res.status(503).send('Generated React frontend is not built. Run npm start to build and launch it.');
 });
 const PORT = process.env.PORT || 3000;
 if (require.main === module) app.listen(PORT, () => console.log('generated app on ' + PORT + ' mode=' + store.mode));
 module.exports = app;
 """
-
-def _dist_index_html(spec: dict) -> str:
-    seed = json.dumps(spec.get("sample_data", {}))
-    sections: list[str] = []
-    for s in spec.get("screens", []):
-        sid = s.get("id", "")
-        title = s.get("title", "")
-        fhtml: list[str] = []
-        for f in s.get("fields", []):
-            fid = f.get("id", "")
-            label = f.get("label", "")
-            ftype = f.get("type", "text")
-            if ftype == "button":
-                fhtml.append(f'<div><button data-testid="{fid}">{label}</button></div>')
-            elif ftype == "select":
-                fhtml.append(f'<div><label>{label}<select data-testid="{fid}"><option>{label}</option></select></label></div>')
-            elif ftype == "list":
-                fhtml.append(f'<div><ul data-testid="{fid}"><li>{label}</li></ul></div>')
-            elif ftype == "password":
-                fhtml.append(f'<div><label>{label}<input data-testid="{fid}" type="password" value="admin" /></label></div>')
-            else:
-                fhtml.append(f'<div><label>{label}<input data-testid="{fid}" value="" /></label></div>')
-        inner = "\n".join(fhtml)
-        disp = "block" if sid == "scr_login" else "none"
-        sections.append(f'<section id="{sid}" style="display:{disp}"><h2>{title}</h2>{inner}<div><button data-nav="scr_menu">Back to menu</button></div></section>')
-    body = "\n".join(sections)
-    return f"""<!doctype html><html><head><meta charset="utf-8"><title>{spec.get('app',{}).get('name','App')}</title></head>
-<body><div id="app"><h1>CairoTrade Order Entry</h1>{body}</div>
-<script>window.__SEED__={seed};</script>
-<script>
-function show(id){{document.querySelectorAll('section').forEach(s=>s.style.display='none');var el=document.getElementById(id);if(el)el.style.display='block';}}
-document.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>show(b.getAttribute('data-nav'))));
-function disc(q){{if(q>=50)return 0.12;if(q>=10)return 0.05;return 0;}}
-function lt(q,p){{return Math.round(q*p*(1-disc(q))*100)/100;}}
-window.addEventListener('keydown',e=>{{if(e.key==='F2'){{e.preventDefault();var t=document.querySelector('[data-testid="fld_total"]');if(t)t.textContent='Sub=1140 VAT=159.6 Total=1299.6 EGP';}}if(e.key==='F5'){{e.preventDefault();}}if(e.key==='Escape'){{show('scr_menu');}}}});
-</script></body></html>
-"""
-
 def _migration_notes(spec: dict) -> str:
     low = [r for r in spec.get("rules", []) if float(r.get("confidence", 0)) < 0.5]
     lines = ["# MIGRATION_NOTES.md", "", "Rules with confidence < 0.5 were NOT implemented:"]
@@ -472,21 +441,24 @@ def generate_job(job_dir: Path, client: Any | None = None) -> dict:
     job_dir = Path(job_dir)
     spec = _appspec(job_dir)
     screens: list[dict] = spec.get("screens", [])
+    if not screens:
+        raise ValueError("AppSpec has no screens; refusing to generate an empty application")
     gdir = job_dir / "generated_app"
-    # 1. parallel sub-agents, one per screen
+
+    # Generate React components independently, then integrate them into one Vite app.
     results: list[tuple[str, str]] = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, len(screens))) as ex:
-        futs = {ex.submit(_one_screen, s, client): s for s in screens}
-        for f in concurrent.futures.as_completed(futs):
-            results.append(f.result())
-    results.sort(key=lambda x: x[0])
-    for rel, content in results:
-        _write(gdir / rel, content)
-    # 2. integration pass (single, deterministic)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, len(screens))) as executor:
+        futures = {executor.submit(_one_screen, screen, client): screen for screen in screens}
+        for future in concurrent.futures.as_completed(futures):
+            results.append(future.result())
+    results.sort(key=lambda item: item[0])
+    for relative_path, source in results:
+        _write(gdir / relative_path, source)
+
     _write(gdir / "client/src/lib/rules.ts", rules_ts())
     _write(gdir / "client/src/App.tsx", _app_tsx(screens))
     _write(gdir / "client/src/main.tsx", _main_tsx())
-    _write(gdir / "index.html", _index_html(spec.get("app", {}).get("name", "App")))
+    _write(gdir / "client/index.html", _index_html(spec.get("app", {}).get("name", "App")))
     _write(gdir / "vite.config.ts", _vite_config())
     _write(gdir / "tsconfig.json", _tsconfig())
     _write(gdir / "package.json", _package_json(spec.get("app", {}).get("name", "App")))
@@ -494,21 +466,28 @@ def generate_job(job_dir: Path, client: Any | None = None) -> dict:
     _write(gdir / "server/index.js", _server_index_js())
     _write(gdir / "data/seed.json", json.dumps(spec.get("sample_data", {}), indent=2))
     _write(gdir / "data/orders.json", "[]")
-    _write(gdir / "dist/index.html", _dist_index_html(spec))
     _write(gdir / "MIGRATION_NOTES.md", _migration_notes(spec))
-    _write(job_dir / "generated_app/README.md",
-           "# Generated app\n\nnpm install\nnpm start\n\nServes on one port (PORT or 3000).\n")
-    # verify integration: every field id present
-    all_tsx = "".join((gdir / r).read_text(encoding="utf-8") for r, _ in results)
+    _write(
+        gdir / "README.md",
+        "# Generated app\\n\\nRun `npm install`, then `npm start`. The start script builds the Vite React app and launches the Express server on PORT or 3000.\\n",
+    )
+
+    # Verify generated React source, not a separately fabricated static HTML page.
+    all_tsx = "".join((gdir / relative_path).read_text(encoding="utf-8") for relative_path, _ in results)
     all_tsx += (gdir / "client/src/App.tsx").read_text(encoding="utf-8")
-    dist_html = (gdir / "dist/index.html").read_text(encoding="utf-8")
-    missing = []
-    for s in screens:
-        for f in s.get("fields", []):
-            fid = f.get("id", "")
-            if fid not in all_tsx and fid not in dist_html:
-                missing.append(fid)
+    missing = [
+        field.get("id", "")
+        for screen in screens
+        for field in screen.get("fields", [])
+        if field.get("id", "") not in all_tsx
+    ]
     if missing:
-        raise ValueError(f"integration failed, missing testids: {missing}")
-    log.info("generate done screens=%d files=%d", len(screens), len(results) + 10)
-    return {"generated_app": str(gdir), "screens": len(screens), "files": len(results) + 10}
+        raise ValueError(f"React integration failed, missing testids: {missing}")
+
+    log.info("generate done screens=%d source_files=%d", len(screens), len(results) + 10)
+    return {
+        "generated_app": str(gdir),
+        "screens": len(screens),
+        "files": len(results) + 10,
+        "build_required": True,
+    }

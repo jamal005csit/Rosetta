@@ -176,3 +176,24 @@ async def events(job_id: str) -> StreamingResponse:
             await asyncio.sleep(0.5)
 
     return StreamingResponse(gen(), media_type="text/event-stream")
+
+
+@app.get("/jobs/{job_id}/{folder}/{file_path:path}")
+def get_portable_report_evidence(job_id: str, folder: str, file_path: str) -> FileResponse:
+    # Relative report links resolve here when the report is served by FastAPI;
+    # the same relative paths also work when report.html is opened from export.zip.
+    if folder not in {"frames", "replay"}:
+        raise HTTPException(404, "evidence file not found")
+    jd = _existing_job(job_id)
+    relative = Path(folder) / file_path
+    if relative.is_absolute() or ".." in relative.parts:
+        raise HTTPException(400, "invalid evidence path")
+    if relative.suffix.lower() not in {".png", ".html", ".json"}:
+        raise HTTPException(403, "evidence file type is not available")
+    target = (jd / relative).resolve()
+    if not target.is_relative_to(jd.resolve()) or not target.is_file():
+        raise HTTPException(404, "evidence file not found")
+    media_type = "image/png" if target.suffix.lower() == ".png" else (
+        "text/html" if target.suffix.lower() == ".html" else "application/json"
+    )
+    return FileResponse(str(target), media_type=media_type)

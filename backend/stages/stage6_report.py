@@ -31,18 +31,25 @@ def generate_report(job_dir: Path) -> Path:
     for c in cov_items:
         unresolved.append(f"Unverified: {c.get('item', '')} - {c.get('reason', '')}")
     rows = []
-    for s in sorted(steps, key=lambda x: x.get("step", 0)):
-        leg = html.escape(str(s.get("legacy_frame", "")))
-        new = html.escape(str(s.get("new_screenshot", "")))
+    for step in sorted(steps, key=lambda item: item.get("step", 0)):
+        legacy = html.escape(str(step.get("legacy_frame", "")))
+        current = html.escape(str(step.get("new_screenshot", "")))
+        legacy_url = html.escape(
+            f"/jobs/{job_dir.name}/files/{step.get('legacy_frame', '')}", quote=True
+        )
+        current_url = html.escape(
+            f"/jobs/{job_dir.name}/files/{step.get('new_screenshot', '')}", quote=True
+        )
         rows.append(
-            "<tr><td>{step}</td><td>{w}</td><td>{st}</td><td>{da}</td><td>{fl}</td>"
-            "<td>{vi}</td><td>{ss}</td><td>{ve}</td><td>{re}</td>"
-            "<td>{leg}<br><img src='{leg}' width='160'></td>"
-            "<td>{new}<br><img src='{new}' width='160'></td></tr>".format(
-                step=s.get("step"), w=s.get("weight"), st=s.get("state"),
-                da=s.get("data"), fl=s.get("flow"), vi=s.get("visual"),
-                ss=s.get("s"), ve=html.escape(str(s.get("verdict", ""))),
-                re=html.escape(str(s.get("reason", ""))), leg=leg, new=new,
+            "<tr><td>{step}</td><td>{weight}</td><td>{state}</td><td>{data}</td><td>{flow}</td>"
+            "<td>{visual}</td><td>{score}</td><td>{verdict}</td><td>{reason}</td>"
+            "<td>{legacy}<br><a href='{legacy_url}'>open</a><br><img src='{legacy_url}' width='160'></td>"
+            "<td>{current}<br><a href='{current_url}'>open</a><br><img src='{current_url}' width='160'></td></tr>".format(
+                step=step.get("step"), weight=step.get("weight"), state=step.get("state"),
+                data=step.get("data"), flow=step.get("flow"), visual=step.get("visual"),
+                score=step.get("s"), verdict=html.escape(str(step.get("verdict", ""))),
+                reason=html.escape(str(step.get("reason", ""))),
+                legacy=legacy, current=current, legacy_url=legacy_url, current_url=current_url,
             )
         )
     cov_html = "".join(f"<li>{html.escape(str(c.get('item','')))} - {html.escape(str(c.get('reason','')))}</li>" for c in cov_items) or "<li>none</li>"

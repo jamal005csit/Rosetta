@@ -56,10 +56,24 @@ def observe_job(job_dir: Path, client: MuseClient | None = None) -> dict:
         )
 
     prompt = prompts_observer()
+    timestamp_path = job_dir / "frame_timestamps.json"
+    frame_timestamps = []
+    if timestamp_path.is_file():
+        frame_timestamps = json.loads(timestamp_path.read_text(encoding="utf-8"))
+    if frame_timestamps:
+        prompt += "\n\nExtracted frame references (filename and exact video timestamp):\n"
+        prompt += json.dumps(frame_timestamps, ensure_ascii=False)
+
     # Always use the validated keyframe path. The raw-video path previously bypassed
     # schema retries and could return unvalidated or fabricated output.
     data = client.chat_with_keyframes(frames, transcript, prompt, observations_schema(), "observer")
     validate_observations(data)
+    if frame_timestamps:
+        for observation in data["observations"]:
+            nearest = min(frame_timestamps, key=lambda row: abs(float(row["t"]) - float(observation["t"])))
+            if abs(float(nearest["t"]) - float(observation["t"])) <= 3.0:
+                observation["frame"] = nearest["frame"]
+                observation["frame_timestamp"] = float(nearest["t"])
 
     output = job_dir / "observations.json"
     output.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")

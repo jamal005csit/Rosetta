@@ -61,7 +61,7 @@ Run these commands from the repository root.
 
    Open `http://127.0.0.1:5173`. The Vite development server proxies API requests to the backend on port 8000.
 
-6. **Upload a recording and run the pipeline.** Create a job by uploading an MP4, MOV, MKV, or WebM screen recording. Open the job and select **Run full pipeline**. Rosetta runs ingest → observe → specify → generate → replay → score → repair → report. A failed stage stops the sequence and displays the backend error; it does not substitute fabricated observations or screenshots.
+6. **Upload a recording and run the pipeline.** Create a job by uploading an MP4, MOV, MKV, or WebM screen recording (maximum 500 MiB per upload). Open the job and select **Run full pipeline**. Rosetta runs ingest → observe → specify → generate → replay → score → repair → report. A failed stage stops the sequence and displays the backend error; it does not substitute fabricated observations or screenshots.
 
 7. **Inspect and export the result.** Open `report.html` (the parity report) to review each step, browser action, active screen, score component, and linked legacy/replay evidence. Download `export.zip` when the report and generated React build are available.
 

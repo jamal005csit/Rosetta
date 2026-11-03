@@ -1,4 +1,4 @@
-from backend.stages.stage6_score import step_score, parity_from_steps
+from backend.stages.stage6_score import step_score, parity_from_steps, check_state, check_data, check_flow
 
 
 def test_step_score_068():
@@ -30,3 +30,18 @@ def test_w2_below_05_fails():
     p, ok = parity_from_steps(steps)
     assert p >= 0
     assert ok is False
+
+
+def test_state_data_and_flow_use_actual_replay_snapshot():
+    replay = {"success": True, "active_screen": "scr_order"}
+    snapshot = {
+        "active_screen": "scr_order",
+        "text": "Saved total 1299.60 EGP",
+        "fields": {"fld_qty": "12"}
+    }
+    assert check_state("scr_order", replay, True) == 1.0
+    assert check_state("scr_login", replay, True) == 0.0
+    assert check_data({"fld_qty": "12"}, ["Saved total 1299.60 EGP"], snapshot) == 1.0
+    assert check_data({"fld_qty": "99"}, [], snapshot) == 0.0
+    assert check_flow("scr_order", replay, True) == 1.0
+    assert check_flow("scr_order", {"success": False, "active_screen": "scr_order"}, True) == 0.0

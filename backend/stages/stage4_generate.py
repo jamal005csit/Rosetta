@@ -437,6 +437,21 @@ def _migration_notes(spec: dict) -> str:
     lines += ["", "Shortcuts preserved: F2 save, F5 refresh, Esc cancel.", "data-testid equals AppSpec field id."]
     return "\n".join(lines) + "\n"
 
+def _safe_screen_output_path(value: str, screen_id: str) -> str:
+    """Constrain model-selected component paths to generated screen source files."""
+    normalized = str(value).replace("\\", "/")
+    parts = normalized.split("/")
+    if (
+        normalized.startswith("/")
+        or ":" in normalized
+        or any(part in {"", ".", ".."} for part in parts)
+        or not normalized.startswith("client/src/screens/")
+        or not normalized.endswith(".tsx")
+    ):
+        raise ValueError(f"invalid generated screen path for {screen_id}: {value!r}")
+    return normalized
+
+
 def _one_screen(screen: dict, client: Any | None) -> tuple[str, str]:
     if client is not None:
         try:
@@ -446,7 +461,13 @@ def _one_screen(screen: dict, client: Any | None) -> tuple[str, str]:
             prompt += "\n\nSCREEN:\n" + _j.dumps(screen)
             out = client.chat_json(prompt, schema, f"generate:{screen.get('id')}")
             if isinstance(out, dict) and out.get("content"):
-                return (out.get("file") or f"client/src/screens/{_comp_name(screen.get('id',''))}.tsx", out["content"])
+                return (
+                    _safe_screen_output_path(
+                        out["file"] or f"client/src/screens/{_comp_name(screen.get('id',''))}.tsx",
+                        str(screen.get("id", "")),
+                    ),
+                    out["content"],
+                )
         except Exception as e:
             # A configured model failure must not silently downgrade the screen to
             # a handcrafted template and present it as a successful AI migration.

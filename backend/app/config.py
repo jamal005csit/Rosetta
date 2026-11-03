@@ -4,6 +4,11 @@ import os
 from pathlib import Path
 
 log = logging.getLogger(__name__)
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parents[2] / ".env", override=False)
+except ImportError:
+    log.debug("python-dotenv not installed; using process environment only")
 
 def repo_root() -> Path:
     return Path(__file__).resolve().parents[2]

@@ -146,6 +146,25 @@ def get_export(job_id: str) -> FileResponse:
     return FileResponse(str(z), media_type="application/zip", filename="export.zip")
 
 
+
+@app.get("/jobs/{job_id}/files/{file_path:path}")
+def get_job_evidence_file(job_id: str, file_path: str) -> FileResponse:
+    jd = _existing_job(job_id)
+    relative = Path(file_path)
+    if relative.is_absolute() or ".." in relative.parts or not relative.parts:
+        raise HTTPException(400, "invalid evidence path")
+    if relative.parts[0] not in {"frames", "replay"}:
+        raise HTTPException(403, "only frame and replay evidence is available")
+    if relative.suffix.lower() not in {".png", ".html", ".json"}:
+        raise HTTPException(403, "evidence file type is not available")
+    target = (jd / relative).resolve()
+    if not target.is_relative_to(jd.resolve()) or not target.is_file():
+        raise HTTPException(404, "evidence file not found")
+    media_type = "image/png" if target.suffix.lower() == ".png" else (
+        "text/html" if target.suffix.lower() == ".html" else "application/json"
+    )
+    return FileResponse(str(target), media_type=media_type)
+
 @app.get("/jobs/{job_id}/events")
 async def events(job_id: str) -> StreamingResponse:
     jd = _existing_job(job_id)

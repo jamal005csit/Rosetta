@@ -52,7 +52,7 @@ def _evidence_times(data: dict):
 
 def validate_appspec(data: dict, observations: dict, job_dir: Path) -> None:
     jsonschema.validate(instance=data, schema=appspec_schema())
-    observation_times = {round(float(item["t"]), 1) for item in observations["observations"]}
+    observation_times = [float(item["t"]) for item in observations["observations"]]
     if not data.get("screens"):
         raise ValueError("AppSpec contains no observed screens")
 
@@ -74,7 +74,7 @@ def validate_appspec(data: dict, observations: dict, job_dir: Path) -> None:
             raise ValueError("AppSpec item has no evidence timestamps")
         for reference in evidence_list:
             match = re.fullmatch(r"t=(\d+(?:\.\d+)?)s", reference)
-            if not match or round(float(match.group(1)), 1) not in observation_times:
+            if not match or not any(abs(float(match.group(1)) - observed_time) <= 0.051 for observed_time in observation_times):
                 raise ValueError(f"evidence timestamp is not present in observations: {reference!r}")
 
     for flow in data.get("flows", []):

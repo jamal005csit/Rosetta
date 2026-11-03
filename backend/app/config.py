@@ -26,6 +26,10 @@ def muse_model() -> str:
 
 def max_calls_per_job() -> int:
     try:
-        return int(os.getenv("MAX_CALLS_PER_JOB", "50"))
-    except ValueError:
+        value = int(os.getenv("MAX_CALLS_PER_JOB", "50"))
+        if value < 1:
+            raise ValueError("MAX_CALLS_PER_JOB must be positive")
+        return value
+    except ValueError as exc:
+        log.warning("invalid MAX_CALLS_PER_JOB (%s); using safe default 50", exc)
         return 50

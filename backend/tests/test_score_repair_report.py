@@ -60,6 +60,8 @@ def test_score_stores_frames_verdict_reason():
         assert len(par["steps"]) >= 1
         for s in par["steps"]:
             assert s["legacy_frame"] and s["new_screenshot"] and s["verdict"] and s["reason"]
+            assert s["visual"] == 0.0  # no model judge means no visual credit
+            assert s["action_success"] is True
             assert (jd / s["legacy_frame"]).exists()
             assert (jd / s["new_screenshot"]).exists()
             assert s["legacy_frame"].split("/")[-1] in s["reason"]

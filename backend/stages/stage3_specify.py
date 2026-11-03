@@ -37,6 +37,7 @@ def normalize_appspec(data: dict, observations: dict) -> dict:
 
 def _evidence_times(data: dict):
     for screen in data.get("screens", []):
+        yield screen.get("evidence", [])
         for field in screen.get("fields", []):
             yield field.get("evidence", [])
         for shortcut in screen.get("shortcuts", []):

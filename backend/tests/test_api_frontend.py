@@ -41,3 +41,17 @@ def test_complete_stage_router_is_mounted():
         # branch instead of returning 404 from a missing route.
         response = c.post(f"/jobs/{jid}/run/not-a-stage")
         assert response.status_code == 400
+
+
+def test_evidence_file_endpoint_is_limited_to_frames_and_replay():
+    with tempfile.TemporaryDirectory() as td:
+        c = _client_for(td)
+        files = {"f": ("demo.mp4", io.BytesIO(b"fake-video-bytes"), "video/mp4")}
+        jid = c.post("/jobs", files=files).json()["id"]
+        frame_dir = Path(td) / jid / "frames"
+        frame_dir.mkdir(exist_ok=True)
+        (frame_dir / "frame_0001.png").write_bytes(b"test frame")
+        response = c.get(f"/jobs/{jid}/files/frames/frame_0001.png")
+        assert response.status_code == 200
+        assert response.content == b"test frame"
+        assert c.get(f"/jobs/{jid}/files/upload.mp4").status_code == 403

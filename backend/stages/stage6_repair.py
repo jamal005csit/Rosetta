@@ -87,9 +87,20 @@ def _replay_evidence(job_dir: Path, step_number: int) -> tuple[dict, list[str]]:
         if not path.is_relative_to(replay_dir.resolve()) or not path.is_file():
             raise FileNotFoundError(f"replay image missing: {entry[key]}")
         images.append(base64.b64encode(path.read_bytes()).decode("ascii"))
-    snapshot_path = replay_dir / entry["snapshot"]
+    snapshot_relative = Path(entry["snapshot"])
+    dom_relative = Path(entry["dom"])
+    for relative in (snapshot_relative, dom_relative):
+        if relative.is_absolute() or ".." in relative.parts:
+            raise ValueError("unsafe DOM snapshot path in replay metadata")
+    snapshot_path = (replay_dir / snapshot_relative).resolve()
+    dom_path = (replay_dir / dom_relative).resolve()
+    if not snapshot_path.is_relative_to(replay_dir.resolve()) or not snapshot_path.is_file():
+        raise FileNotFoundError("browser state snapshot is missing")
+    if not dom_path.is_relative_to(replay_dir.resolve()) or not dom_path.is_file():
+        raise FileNotFoundError("actual browser DOM capture is missing")
     snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
-    return {"entry": entry, "snapshot": snapshot}, images
+    dom_text = dom_path.read_text(encoding="utf-8")[:20000]
+    return {"entry": entry, "snapshot": snapshot, "dom": dom_text}, images
 
 
 def _fix_step(
@@ -102,6 +113,13 @@ def _fix_step(
     number = int(step_result["step"])
     generated_dir = job_dir / "generated_app"
     evidence, images = _replay_evidence(job_dir, number)
+    legacy_relative = Path(journey_entry["legacy_frame"])
+    if legacy_relative.is_absolute() or ".." in legacy_relative.parts:
+        raise ValueError("unsafe legacy frame path supplied to repair")
+    legacy_path = (job_dir / legacy_relative).resolve()
+    if not legacy_path.is_relative_to(job_dir.resolve()) or not legacy_path.is_file():
+        raise FileNotFoundError("legacy frame missing during repair")
+    images.insert(0, base64.b64encode(legacy_path.read_bytes()).decode("ascii"))
     expected = journey_entry.get("expect", {}) or {}
     prompt = (
         _repair_prompt()

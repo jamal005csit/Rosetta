@@ -97,12 +97,21 @@ Proceed to Phase 4: remove fabricated Playwright/replay evidence and make parity
 ## Final verification state
 
 - All eight repair phases have implementation checkpoints committed on `repair/rosetta-full-repair`.
-- The branch comparison reports **104 commits ahead of `main`, 0 behind**. The `main` branch was not modified.
+- The branch comparison reports **111 commits ahead of `main`, 0 behind** at checkpoint refresh. The `main` branch was not modified.
 - GitHub file operations and commits succeeded.
-- **Not verified:** automated Python tests, TypeScript/Vite compilation, Windows PowerShell execution, npm dependency installation, FFmpeg extraction/timestamp mapping, faster-whisper transcription, Chromium replay, and live Meta endpoint compatibility.
-- The local checkout attempt could not resolve `github.com` in this execution environment. The GitHub connection provides repository read/write operations but no test runner, so no test or build success is claimed.
-- Before merging, run `python -m pytest backend/tests -v`, `cd frontend; npm install; npm run build`, then execute one real recording end-to-end with a valid Muse endpoint/key and confirm the resulting screenshots, parity, repair history, report, and ZIP.
+- Added a Windows GitHub Actions verification workflow at `.github/workflows/windows-verification.yml` to run Python compilation, backend tests, Playwright Chromium installation, frontend dependency installation/build, and the mock self-test on a Windows runner.
+- The first Windows CI run exposed five regressions. Four were corrected: the generated JSX active-screen attribute escaping, data-value matching, Windows short-path preservation in repair validation, and README setup/output documentation.
+- The next CI run passed 31 tests and isolated two remaining failures: Menu and Report templates did not preserve the exact AppSpec field IDs. The generator was updated to derive those test IDs from each screen's AppSpec fields.
+- **Current verification run:** GitHub Actions run [#41595329418](https://github.com/jamal005csit/Rosseta/actions/runs/41595329418) is still in progress. Its test/build results are not yet available. The latest prior completed run reported 31 passed and 2 failed before the AppSpec field-ID mapping fix.
+- Python compilation, dependency installation, and Playwright Chromium installation succeeded in the preceding Windows CI run. Frontend build and mock self-test were skipped because pytest failed first.
+- **Still not verified:** a clean full backend test run after the latest generator fix, TypeScript/Vite compilation, the mock self-test, FFmpeg extraction/timestamp mapping, faster-whisper transcription, real recording replay, and live Meta endpoint compatibility.
+- The local checkout attempt could not resolve `github.com`; Windows GitHub Actions now provides the runtime environment for automated checks. Do not claim tests or builds passed until the current run succeeds.
+- Before merging, require a green Windows verification run and execute one real recording end-to-end with a valid Muse endpoint/key; confirm actual screenshots, parity, repair history, report, and ZIP.
 
 ## Resume point
 
-Start with runtime verification in a network-enabled Windows PowerShell checkout. Fix any failures, update this checkpoint with actual test/build results, then open a pull request for review. Do not merge to `main` until runtime verification passes.
+1. Monitor Windows Actions run [#41595329418](https://github.com/jamal005csit/Rosseta/actions/runs/41595329418).
+2. If it fails, inspect the failed job log and fix the exact regression on this branch; add a checkpoint after each fix.
+3. If it passes, record the pytest count, frontend build, and mock self-test results here.
+4. Then run one real recording through the full pipeline with valid Muse credentials and FFmpeg; provider compatibility and actual parity remain acceptance requirements.
+5. Open a pull request for review only after automated checks pass. Do not merge to `main` until real-recording verification passes.

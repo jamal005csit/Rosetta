@@ -4,8 +4,7 @@ import tempfile
 
 import jsonschema
 
-from backend.stages.stage2_observe import fallback_observations
-from backend.stages.stage3_specify import fallback_appspec, normalize_appspec
+from backend.tests.appspec_fixture import build_appspec
 from backend.stages.stage4_generate import generate_job
 from backend.stages.stage5_replay import replay_job
 from backend.stages.stage6_score import score_job
@@ -14,14 +13,13 @@ from backend.stages.stage6_report import generate_report
 
 
 def _demo_job(td: str) -> Path:
-    jd = Path(td)
-    (jd / "frames").mkdir(exist_ok=True)
-    obs = fallback_observations([])
-    spec = normalize_appspec(fallback_appspec(obs), obs)
-    (jd / "appspec.json").write_text(json.dumps(spec), encoding="utf-8")
-    generate_job(jd, client=None)
-    replay_job(jd)
-    return jd
+    job_dir = Path(td)
+    (job_dir / "frames").mkdir(exist_ok=True)
+    spec = build_appspec()
+    (job_dir / "appspec.json").write_text(json.dumps(spec), encoding="utf-8")
+    generate_job(job_dir, client=None)
+    replay_job(job_dir)
+    return job_dir
 
 
 def _parity_schema() -> dict:

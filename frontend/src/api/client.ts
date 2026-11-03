@@ -2,7 +2,7 @@ export async function uploadVideo(file: File): Promise<string> {
     const fd = new FormData();
     fd.append('f', file, file.name);
     const r = await fetch('/jobs', { method: 'POST', body: fd });
-    if (!r.ok) throw new Error('upload failed ' + r.status);
+    if (!r.ok) throw new Error('upload failed ' + r.status + ': ' + await r.text());
     const j = await r.json();
     return j.id as string;
   }
@@ -16,13 +16,13 @@ export async function uploadVideo(file: File): Promise<string> {
   
   export async function getStatus(jobId: string): Promise<{ stages: Record<string, boolean>; files: string[] }> {
     const r = await fetch(`/jobs/${jobId}/status`);
-    if (!r.ok) throw new Error('status failed');
+    if (!r.ok) throw new Error('status failed ' + r.status + ': ' + await r.text());
     return r.json();
   }
   
   export async function runStage(jobId: string, stage: string): Promise<unknown> {
     const r = await fetch(`/jobs/${jobId}/run/${stage}`, { method: 'POST' });
-    if (!r.ok) throw new Error('run ' + stage + ' failed ' + r.status);
+    if (!r.ok) throw new Error('run ' + stage + ' failed ' + r.status + ': ' + await r.text());
     return r.json();
   }
   

@@ -27,8 +27,6 @@ def validate_observations(data: dict) -> None:
     timestamps = [float(item["t"]) for item in observations]
     if timestamps != sorted(timestamps):
         raise ValueError("observation timestamps must be in chronological order")
-    if len(timestamps) != len(set(timestamps)):
-        raise ValueError("observation timestamps must be unique")
 
 
 def observe_job(job_dir: Path, client: MuseClient | None = None) -> dict:

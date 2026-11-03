@@ -6,6 +6,8 @@ import threading
 from pathlib import Path
 
 log = logging.getLogger(__name__)
+_LOCKS_GUARD = threading.Lock()
+_LOCKS: dict[str, threading.Lock] = {}
 
 
 class BudgetExceeded(RuntimeError):
@@ -18,7 +20,12 @@ class CallBudget:
             raise ValueError("max_calls must be at least 1")
         self.max_calls = int(max_calls)
         self.state_path = Path(state_path) if state_path is not None else None
-        self._lock = threading.Lock()
+        if self.state_path is None:
+            self._lock = threading.Lock()
+        else:
+            lock_key = str(self.state_path.resolve())
+            with _LOCKS_GUARD:
+                self._lock = _LOCKS.setdefault(lock_key, threading.Lock())
         self.used = self._load_used()
 
     def _load_used(self) -> int:
@@ -47,6 +54,10 @@ class CallBudget:
 
     def consume(self, label: str = "") -> None:
         with self._lock:
+            # Refresh while holding the per-job lock so API-stage clients cannot
+            # spend a stale copy of the same persisted budget.
+            if self.state_path is not None:
+                self.used = self._load_used()
             if self.used >= self.max_calls:
                 raise BudgetExceeded(
                     f"Muse call budget {self.used}/{self.max_calls} exceeded at {label}"
@@ -56,4 +67,7 @@ class CallBudget:
             log.info("Muse budget %d/%d used (%s)", self.used, self.max_calls, label)
 
     def remaining(self) -> int:
-        return max(0, self.max_calls - self.used)
+        with self._lock:
+            if self.state_path is not None:
+                self.used = self._load_used()
+            return max(0, self.max_calls - self.used)

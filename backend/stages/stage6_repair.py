@@ -53,12 +53,16 @@ def _allowed_source_path(generated_dir: Path, relative_path: str) -> Path:
         raise ValueError(f"repair may only modify generated_app/client/src or generated_app/server: {relative_path}")
     if relative.suffix not in {".tsx", ".ts", ".css", ".js"}:
         raise ValueError(f"repair file type is not allowed: {relative_path}")
-    target = (generated_dir / relative).resolve()
-    if not target.is_relative_to(generated_dir.resolve()):
+    candidate = generated_dir / relative
+    resolved_root = generated_dir.resolve()
+    resolved_target = candidate.resolve()
+    if not resolved_target.is_relative_to(resolved_root):
         raise ValueError(f"repair path escapes generated_app: {relative_path}")
-    if not target.is_file():
+    if not resolved_target.is_file():
         raise ValueError(f"repair may only update existing generated source files: {relative_path}")
-    return target
+    # Return the lexical path to preserve Windows 8.3 aliases while security
+    # checks above are performed against canonical resolved paths.
+    return candidate
 
 
 def _source_context(generated_dir: Path) -> str:

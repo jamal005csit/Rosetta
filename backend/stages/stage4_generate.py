@@ -171,6 +171,7 @@ export default function Order(props: { go: (s: string) => void }) {
     try {
       const r = await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cust:customer,lines,total:t.tot})});
       const j = await r.json();
+      if (!r.ok) throw new Error(j.detail || 'HTTP ' + r.status);
       setMsg('Saved total ' + (j.total ?? t.tot) + ' EGP');
       setLines([]);
     } catch (error) { const detail = error instanceof Error ? error.message : 'unknown error'; setMsg('Save failed: ' + detail); }

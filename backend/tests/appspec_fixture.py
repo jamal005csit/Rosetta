@@ -14,7 +14,7 @@ def build_appspec() -> dict:
     screen_rows = []
     for screen_id, title, fields in screens:
         screen_rows.append({
-            "id": screen_id, "title": title,
+            "id": screen_id, "title": title, "evidence": ["t=1.0s"],
             "fields": [{
                 "id": field_id, "label": label, "type": "text",
                 "required": False, "enabled": True, "evidence": ["t=1.0s"]

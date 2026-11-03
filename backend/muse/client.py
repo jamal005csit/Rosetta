@@ -2,6 +2,7 @@
 import base64
 import json
 import logging
+import re
 import time
 from pathlib import Path
 from typing import Any, Callable
@@ -37,13 +38,14 @@ def _build_image_part(b64: str, mime: str = "image/png") -> dict:
 
 
 def _build_payload(model: str, messages: list, schema: dict, name: str = "out") -> dict:
+    safe_name = re.sub(r"[^A-Za-z0-9_-]", "_", name)[:64] or "response"
     return {
         "model": model,
         "messages": messages,
         "temperature": 0,
         "response_format": {
             "type": "json_schema",
-            "json_schema": {"name": name, "strict": True, "schema": schema},
+            "json_schema": {"name": safe_name, "strict": True, "schema": schema},
         },
     }
 

@@ -40,7 +40,10 @@ def build_appspec() -> dict:
                 {"id": "C001", "name": "Sample Customer", "limit": 5000},
                 {"id": "C002", "name": "Second Customer", "limit": 2500}
             ],
-            "items": [{"sku": "ITM-01", "name": "Sample Item", "price": 100}]
+            "items": [
+                {"sku": "ITM-01", "name": "Sample Item", "price": 100},
+                {"sku": "ITM-02", "name": "Second Item", "price": 250}
+            ]
         },
         "journey": journey,
         "coverage": {"unverified": []}

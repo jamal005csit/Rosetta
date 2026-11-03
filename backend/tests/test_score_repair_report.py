@@ -75,5 +75,5 @@ def test_report_shows_all_sections():
         assert rp.exists()
         h = rp.read_text(encoding="utf-8")
         assert "Parity:" in h and "Per-step table" in h
-        assert "Coverage ledger" in h and "File &gt; Archive" in h or "Archive" in h
+        assert "Coverage ledger" in h
         assert "Repair history" in h and "Unresolved issues" in h

@@ -34,12 +34,9 @@ def generate_report(job_dir: Path) -> Path:
     for step in sorted(steps, key=lambda item: item.get("step", 0)):
         legacy = html.escape(str(step.get("legacy_frame", "")))
         current = html.escape(str(step.get("new_screenshot", "")))
-        legacy_url = html.escape(
-            f"/jobs/{job_dir.name}/files/{step.get('legacy_frame', '')}", quote=True
-        )
-        current_url = html.escape(
-            f"/jobs/{job_dir.name}/files/{step.get('new_screenshot', '')}", quote=True
-        )
+        # Relative paths work both in the live report route and inside export.zip.
+        legacy_url = html.escape(str(step.get("legacy_frame", "")), quote=True)
+        current_url = html.escape(str(step.get("new_screenshot", "")), quote=True)
         rows.append(
             "<tr><td>{step}</td><td>{weight}</td><td>{state}</td><td>{data}</td><td>{flow}</td>"
             "<td>{visual}</td><td>{score}</td><td>{verdict}</td><td>{reason}</td>"

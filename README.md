@@ -63,7 +63,7 @@ Run these commands from the repository root.
 
 6. **Upload a recording and run the pipeline.** Create a job by uploading an MP4, MOV, MKV, or WebM screen recording. Open the job and select **Run full pipeline**. Rosetta runs ingest → observe → specify → generate → replay → score → repair → report. A failed stage stops the sequence and displays the backend error; it does not substitute fabricated observations or screenshots.
 
-7. **Inspect and export the result.** Open the parity report to review each step, browser action, active screen, score component, and linked legacy/replay evidence. Download `export.zip` when the report and generated React build are available.
+7. **Inspect and export the result.** Open `report.html` (the parity report) to review each step, browser action, active screen, score component, and linked legacy/replay evidence. Download `export.zip` when the report and generated React build are available.
 
 ## Command-line pipeline
 
@@ -77,7 +77,7 @@ python -m backend.tools.run_phase4 --job jobs/demo --max-rounds 3
 ```
 
 - Phase 2 extracts timestamped keyframes and audio, transcribes speech locally when available, then asks Muse to produce observations and an AppSpec.
-- Phase 3 generates React/Vite source and runs the actual app through Playwright. It installs the generated app's npm dependencies if needed.
+- Phase 3 generates React/Vite source and runs the actual app through Playwright. It installs the generated app's npm dependencies if needed; the generated app's `npm start` command builds the Vite bundle and launches the Express server.
 - Phase 4 compares real replay evidence, optionally repairs generated source through Muse (maximum three rounds), reruns the full journey, and writes the report.
 
 The command-line stages require the same runtime dependencies as the API pipeline. They are not an offline synthetic demo.

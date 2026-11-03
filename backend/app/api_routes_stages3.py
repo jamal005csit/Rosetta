@@ -6,8 +6,7 @@ from fastapi import APIRouter, HTTPException
 
 from backend.app.store import existing_job_path
 from backend.muse.client import MuseClient
-from backend.muse.budget import CallBudget
-from backend.app.config import max_calls_per_job
+from backend.app.config import meta_key
 from backend.stages import stage1_ingest
 from backend.stages.stage2_observe import observe_job
 from backend.stages.stage3_specify import specify_job
@@ -22,8 +21,11 @@ router = APIRouter()
 
 
 def _client(jd: Path) -> MuseClient | None:
+    if not meta_key():
+        log.warning("META_API_KEY is not configured; model-dependent stages will fail closed")
+        return None
     try:
-        return MuseClient.from_env(jd, CallBudget(max_calls_per_job()))
+        return MuseClient.from_env(jd)
     except Exception as exc:
         log.warning("Muse client unavailable for job %s: %s", jd.name, exc)
         return None

@@ -1,0 +1,1 @@
+Merge the observations into an AppSpec. Merge duplicate screens by title and layout. Give every item the timestamps that prove it. List in coverage.unverified every menu, button, tab or state that is visible but never used. Do not add features you did not see.

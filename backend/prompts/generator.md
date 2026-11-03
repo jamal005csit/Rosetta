@@ -1,0 +1,1 @@
+Implement exactly this AppSpec. Preserve labels, field order, shortcuts and calculations. Implement every rule with confidence of 0.5 or higher, and list rules below 0.5 in MIGRATION_NOTES.md instead. Add data-testid equal to each field id. Use a modern, responsive, accessible layout. Do not copy any vendor's branding.

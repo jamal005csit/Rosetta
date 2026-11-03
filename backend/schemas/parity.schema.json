@@ -1,0 +1,18 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "parity",
+    "type": "object",
+    "required": ["parity", "pass", "steps"],
+    "properties": {
+      "parity": {"type": "number", "minimum": 0, "maximum": 100},
+      "pass": {"type": "boolean"},
+      "steps": {"type": "array", "items": {"type": "object",
+        "required": ["step", "weight", "state", "data", "flow", "visual", "s", "verdict", "reason"],
+        "properties": {"step": {"type": "integer"}, "weight": {"type": "integer"},
+          "state": {"type": "number"}, "data": {"type": "number"},
+          "flow": {"type": "number"}, "visual": {"type": "number"},
+          "s": {"type": "number"}, "verdict": {"type": "string"},
+          "reason": {"type": "string"},
+          "legacy_frame": {"type": "string"}, "new_screenshot": {"type": "string"}}}}
+    }
+  }

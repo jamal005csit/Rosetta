@@ -1,0 +1,72 @@
+"""Report: overall score, per-step table, coverage, repair history, unresolved. FR-15."""
+import html
+import json
+import logging
+from pathlib import Path
+
+log = logging.getLogger(__name__)
+
+
+def _load(job_dir: Path, name: str, default: object) -> object:
+    p = Path(job_dir) / name
+    if not p.exists():
+        return default
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        log.warning("%s read failed: %s", name, e)
+        return default
+
+
+def generate_report(job_dir: Path) -> Path:
+    job_dir = Path(job_dir)
+    spec = _load(job_dir, "appspec.json", {})
+    parity = _load(job_dir, "parity.json", {"parity": 0, "pass": False, "steps": []})
+    repair = _load(job_dir, "repair_history.json", {"rounds": 0, "history": []})
+    assert isinstance(spec, dict) and isinstance(parity, dict) and isinstance(repair, dict)
+    steps: list[dict] = parity.get("steps", [])  # type: ignore
+    cov_items: list[dict] = spec.get("coverage", {}).get("unverified", []) if isinstance(spec.get("coverage"), dict) else []
+    failing = [s for s in steps if s.get("verdict") != "pass"]
+    unresolved = [f"Step {s.get('step')} s={s.get('s')} {s.get('reason', '')}" for s in failing]
+    for c in cov_items:
+        unresolved.append(f"Unverified: {c.get('item', '')} - {c.get('reason', '')}")
+    rows = []
+    for s in sorted(steps, key=lambda x: x.get("step", 0)):
+        leg = html.escape(str(s.get("legacy_frame", "")))
+        new = html.escape(str(s.get("new_screenshot", "")))
+        rows.append(
+            "<tr><td>{step}</td><td>{w}</td><td>{st}</td><td>{da}</td><td>{fl}</td>"
+            "<td>{vi}</td><td>{ss}</td><td>{ve}</td><td>{re}</td>"
+            "<td>{leg}<br><img src='{leg}' width='160'></td>"
+            "<td>{new}<br><img src='{new}' width='160'></td></tr>".format(
+                step=s.get("step"), w=s.get("weight"), st=s.get("state"),
+                da=s.get("data"), fl=s.get("flow"), vi=s.get("visual"),
+                ss=s.get("s"), ve=html.escape(str(s.get("verdict", ""))),
+                re=html.escape(str(s.get("reason", ""))), leg=leg, new=new,
+            )
+        )
+    cov_html = "".join(f"<li>{html.escape(str(c.get('item','')))} - {html.escape(str(c.get('reason','')))}</li>" for c in cov_items) or "<li>none</li>"
+    rep_hist = repair.get("history", [])
+    rep_html = ""
+    for r in rep_hist:
+        fixes = "".join(f"<li>step {f.get('step')}: {html.escape(str(f.get('cause','')))} {html.escape(str(f.get('patch','')))} "
+                        f"s {f.get('s_before')} -&gt; {f.get('s_after')}</li>" for f in r.get("fixes", []))
+        rep_html += f"<li>round {r.get('round')}: {r.get('parity_before')} -&gt; {r.get('parity_after')} reran_all={r.get('reran_all')}<ul>{fixes}</ul></li>"
+    rep_html = rep_html or "<li>no repairs (already passing)</li>"
+    un_html = "".join(f"<li>{html.escape(u)}</li>" for u in unresolved) or "<li>none</li>"
+    app_name = html.escape(str(spec.get("app", {}).get("name", "Rosetta")))
+    out_html = f"""<!doctype html><html><head><meta charset="utf-8"><title>Rosetta Parity Report</title>
+<style>body{{font-family:system-ui;max-width:1100px;margin:20px auto}}table{{border-collapse:collapse;width:100%}}td,th{{border:1px solid #ccc;padding:4px;font-size:12px}}</style>
+</head><body>
+<h1>Rosetta Parity Report - {app_name}</h1>
+<h2>Overall score</h2><p>Parity: {parity.get('parity')} Pass: {parity.get('pass')}</p>
+<h2>Per-step table</h2><table><tr><th>step</th><th>w</th><th>state</th><th>data</th><th>flow</th><th>visual</th><th>s</th><th>verdict</th><th>reason</th><th>legacy</th><th>new</th></tr>
+{''.join(rows)}</table>
+<h2>Coverage ledger</h2><ul>{cov_html}</ul>
+<h2>Repair history</h2><ul>{rep_html}</ul><p>rounds={repair.get('rounds', 0)}</p>
+<h2>Unresolved issues</h2><ul>{un_html}</ul>
+</body></html>"""
+    out = job_dir / "report.html"
+    out.write_text(out_html, encoding="utf-8")
+    log.info("wrote %s parity=%s", out, parity.get("parity"))
+    return out

@@ -1,0 +1,1 @@
+Find business rules by comparing inputs and outputs across the observations. Write each rule in one sentence, give at least one worked example with exact numbers and timestamps, and set confidence from 0 to 1. If only one example supports a rule, confidence must not exceed 0.6. Never state a rule with no example.

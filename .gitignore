@@ -1,0 +1,10 @@
+jobs/
+*.mp4
+*.wav
+__pycache__/
+.venv/
+node_modules/
+dist/
+*.db
+frontend/dist/
+generated_app/node_modules/

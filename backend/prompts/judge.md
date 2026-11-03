@@ -1,0 +1,1 @@
+You compare a legacy screenshot and a new screenshot for the same step. Judge only whether a user would recognize the same task: same labels, same grouping, same controls, comparable values shown. Return a Visual score from 0 to 1 and one sentence naming the two frames you compared. Do not reward styling differences.

@@ -1,0 +1,10 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "screen_gen",
+    "type": "object",
+    "required": ["file", "content"],
+    "properties": {
+      "file": {"type": "string", "minLength": 1},
+      "content": {"type": "string", "minLength": 1}
+    }
+  }

@@ -1,0 +1,35 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "observations",
+    "type": "object",
+    "required": ["observations"],
+    "properties": {
+      "observations": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": ["t", "action", "screen_after"],
+          "properties": {
+            "t": {"type": "number", "minimum": 0},
+            "action": {"type": "string", "enum": ["click", "type", "key", "select"]},
+            "target_label": {"type": "string"},
+            "x": {"type": ["number", "null"]},
+            "y": {"type": ["number", "null"]},
+            "typed_text": {"type": ["string", "null"]},
+            "key": {"type": ["string", "null"]},
+            "screen_after": {
+              "type": "object",
+              "required": ["title"],
+              "properties": {
+                "title": {"type": "string"},
+                "fields": {"type": "object"},
+                "dialog": {"type": ["string", "null"]},
+                "message": {"type": ["string", "null"]}
+              }
+            }
+          }
+        }
+      }
+    }
+  }

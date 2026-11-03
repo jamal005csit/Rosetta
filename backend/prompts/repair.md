@@ -1,0 +1,1 @@
+You receive one failing journey step, the expected values, the actual values, both screenshots and the relevant generated files. Find the smallest change in generated_app that makes the step match. Do not touch the AppSpec, the assertions or other steps. Explain the cause in one sentence, then return the patch.

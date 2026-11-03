@@ -39,6 +39,8 @@ def test_generate_serves_and_seed():
         app_tsx = (g / "client/src/App.tsx").read_text(encoding="utf-8")
         order_tsx = (g / "client/src/screens/Order.tsx").read_text(encoding="utf-8")
         assert "F2" in order_tsx and "F5" in order_tsx and "Escape" in order_tsx
+        assert "Save failed:" in order_tsx
+        assert "catch { setMsg('Saved total" not in order_tsx
         rules = (g / "client/src/lib/rules.ts").read_text(encoding="utf-8")
         assert "0.14" in rules and "0.05" in rules and "0.12" in rules
         assert (g / "MIGRATION_NOTES.md").exists()

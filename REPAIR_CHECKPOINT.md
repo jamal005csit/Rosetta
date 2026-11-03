@@ -10,7 +10,7 @@ Last updated: 2026-11-03
 - [x] Phase 0 — Baseline inspection and acceptance mapping completed.
 - [x] Phase 1 — Backend API integration and job-store correctness/security (implementation complete; runtime tests pending).
 - [x] Phase 2 — Evidence-based observation and AppSpec generation (implementation complete; runtime tests pending).
-- [ ] Phase 3 — Real React/Vite application build and serving.
+- [x] Phase 3 — Real React/Vite application build and serving (implementation complete; runtime tests pending).
 - [ ] Phase 4 — Genuine Playwright replay and parity scoring.
 - [ ] Phase 5 — Genuine Muse-driven repair, limited to generated_app.
 - [ ] Phase 6 — Muse schema validation, retries, budgets, and logging.
@@ -67,6 +67,17 @@ Last updated: 2026-11-03
 
 **Verification status:** regression tests were updated/added but have not been executed. Local checkout remains blocked by DNS resolution for github.com; the connected GitHub service supports source edits but not test execution. Frame timestamp extraction and faster-whisper model download/transcription remain runtime verification items.
 
+## Phase 3 implementation checkpoint
+
+- Removed the hand-authored `dist/index.html` imitation from generation.
+- Vite now uses `generated_app/client` as its root and builds the React application into `generated_app/dist`.
+- The generated package's `npm start` runs the Vite production build before starting Express, on Windows and Unix-compatible shells.
+- Express serves only the actual Vite `dist` output; it no longer serves raw TypeScript source as a fallback and returns HTTP 503 with a clear instruction if the build is absent.
+- Kept API endpoints separate from static frontend serving and added basic order payload validation.
+- Updated generator tests to assert the real Vite entrypoint/build configuration and the absence of the fabricated distribution HTML.
+
+**Verification status:** source and tests are committed, but npm install/build and the test suite have not been run because a local repository checkout is unavailable in this environment.
+
 ## Next action
 
-Proceed to Phase 3: inspect the generated React/Vite app and server, then remove the static HTML imitation and serve the actual production Vite build. Keep runtime-verification limitations explicit.
+Proceed to Phase 4: remove fabricated Playwright/replay evidence and make parity scoring depend on real browser execution, real screenshots, and actual DOM/application state.

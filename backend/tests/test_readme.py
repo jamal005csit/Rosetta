@@ -30,7 +30,7 @@ def test_readme_documents_real_windows_pipeline():
 
     numbered_steps = [
         line for line in text.splitlines()
-        if re.match(r"^\\d+\\.\\s", line.strip())
+        if re.match(r"^\d+\.\s", line.strip())
     ]
     assert 5 <= len(numbered_steps) <= 9, (
         f"setup guide must stay under 10 steps, found {len(numbered_steps)}"

@@ -31,7 +31,7 @@ def _valid_appspec() -> dict:
     return {
         "app": {"name": "Observed App", "domain": "demo", "language": "en", "direction": "ltr"},
         "screens": [{
-            "id": "scr_home", "title": "Home",
+            "id": "scr_home", "title": "Home", "evidence": ["t=1.0s"],
             "fields": [{
                 "id": "fld_login", "label": "Login", "type": "button",
                 "required": False, "enabled": True, "evidence": ["t=1.0s"]

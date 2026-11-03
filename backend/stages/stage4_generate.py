@@ -448,7 +448,15 @@ def _one_screen(screen: dict, client: Any | None) -> tuple[str, str]:
             if isinstance(out, dict) and out.get("content"):
                 return (out.get("file") or f"client/src/screens/{_comp_name(screen.get('id',''))}.tsx", out["content"])
         except Exception as e:
-            log.warning("llm screen %s failed, fallback: %s", screen.get("id"), e)
+            # A configured model failure must not silently downgrade the screen to
+            # a handcrafted template and present it as a successful AI migration.
+            raise RuntimeError(
+                f"Muse screen generation failed for {screen.get('id')}: {e}"
+            ) from e
+        raise RuntimeError(
+            f"Muse returned no usable component for screen {screen.get('id')}"
+        )
+    # Deterministic templates are an explicit offline/dev mode only.
     return fallback_screen(screen)
 
 def generate_job(job_dir: Path, client: Any | None = None) -> dict:

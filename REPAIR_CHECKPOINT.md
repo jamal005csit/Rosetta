@@ -119,3 +119,16 @@ Proceed to Phase 4: remove fabricated Playwright/replay evidence and make parity
 3. Verify the actual Meta/Muse endpoint's image input and strict JSON Schema compatibility.
 4. Fix any end-to-end failures on this branch and checkpoint each fix.
 5. Open a pull request for review after live end-to-end verification. Do not merge to `main` until that acceptance run passes.
+
+
+## UI redesign checkpoint — 2026-11-04
+
+- Replaced the unstyled default React layout with a responsive, dark minimalist workspace inspired by modern AI developer tools.
+- Added a compact persistent sidebar, workspace header, branded overview, refined upload dropzone, project list, and workflow explainer.
+- Added a dedicated pipeline dashboard with progress, eight stage cards, individual/full-pipeline actions, status feedback, and deliverable links.
+- Redesigned parity reporting with an outcome summary and horizontally scrollable evidence table.
+- Added responsive mobile layouts, keyboard-usable file selection, drag-and-drop upload, file type validation, and clearer upload errors.
+- Kept existing API calls, routes, stage orchestration, report evidence links, and export endpoints intact; this is a presentation-layer redesign.
+- Added document metadata and a new CSS design system with typography, spacing, surfaces, status colors, and reduced-motion support.
+
+**Verification status:** GitHub source updates committed on `repair/rosetta-full-repair`. The frontend build has not yet been run after this redesign. The existing Windows Actions workflow is configured to run on pushes to `repair/**`; check its result before treating the UI as build-verified.

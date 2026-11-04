@@ -1,15 +1,6 @@
 import React from 'react';
-
 const ORDER = ['ingest', 'observe', 'specify', 'generate', 'replay', 'score', 'repair', 'report'];
-
-export default function StageProgress(props: { stages: Record<string, boolean> }): JSX.Element {
-  return (
-    <ul>
-      {ORDER.map((s) => (
-        <li key={s}>
-          {s}: {props.stages[s] ? 'done' : 'pending'}
-        </li>
-      ))}
-    </ul>
-  );
+const LABELS: Record<string, string> = { ingest: 'Capture', observe: 'Observe', specify: 'Specify', generate: 'Generate', replay: 'Replay', score: 'Score', repair: 'Repair', report: 'Report' };
+export default function StageProgress(props: { stages: Record<string, boolean>; runningStage?: string }): JSX.Element {
+  return <div className="stage-progress">{ORDER.map((stage, index) => <div className={'progress-step' + (props.stages[stage] ? ' complete' : '') + (props.runningStage === stage ? ' current' : '')} key={stage}><span className="progress-step-icon">{props.stages[stage] ? '✓' : String(index + 1).padStart(2, '0')}</span><span>{LABELS[stage]}</span></div>)}</div>;
 }

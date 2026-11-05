@@ -19,7 +19,7 @@ def _extract_frames(video: Path, frames_dir: Path, filter_value: str) -> tuple[l
     output = str(frames_dir / "frame_%04d.png")
     command = [
         "ffmpeg", "-hide_banner", "-y", "-i", str(video),
-        "-vf", filter_value, "-vsync", "vfr", output,
+        "-vf", filter_value, "-fps_mode", "vfr", output,
     ]
     result = subprocess.run(command, capture_output=True, text=True)
     frames = sorted(frames_dir.glob("frame_*.png"))

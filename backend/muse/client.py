@@ -147,8 +147,16 @@ class MuseClient:
             url, headers=_headers(self.key), json=payload, timeout=120.0
         )
         log.info("POST %s -> %d", url, response.status_code)
+
+        if response.is_error:
+            log.error(
+                "Muse API error body: %s",
+                response.text[:4000]
+            )
+
         if response.status_code in (400, 422) and "video" in response.text.lower():
             raise VideoNotSupported(response.text[:500])
+
         response.raise_for_status()
         return response.json()
 
